@@ -1,9 +1,11 @@
 # TypeScript / JavaScript
 node_modules/
+.next/
 dist/
 build/
 *.log
 .env*
+*.tsbuildinfo
 
 # Python
 __pycache__/
