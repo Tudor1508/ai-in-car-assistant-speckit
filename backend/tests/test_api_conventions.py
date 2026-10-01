@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
@@ -28,6 +28,10 @@ def create_contract_app() -> FastAPI:
         if payload.count == 13:
             raise RuntimeError("secret-token INTERNAL-DATABASE-PATH")
         return success_envelope({"count": payload.count})
+
+    @app.get("/explicit-http-error", responses=common_error_responses())
+    def explicit_http_error() -> None:
+        raise HTTPException(status_code=404, detail="secret internal detail")
 
     return app
 
@@ -83,8 +87,8 @@ def test_openapi_documents_request_success_and_common_errors() -> None:
     success_schema = operation["responses"]["200"]["content"]["application/json"]["schema"]
     success_schema = schema["components"]["schemas"][success_schema["$ref"].split("/")[-1]]
     assert "data" in success_schema["properties"]
-    assert {"422", "500"}.issubset(operation["responses"])
-    for status in ("422", "500"):
+    assert {"404", "405", "422", "500"}.issubset(operation["responses"])
+    for status in ("404", "405", "422", "500"):
         error_schema = operation["responses"][status]["content"]["application/json"]["schema"]
         error_schema = schema["components"]["schemas"][error_schema["$ref"].split("/")[-1]]
         assert "error" in error_schema["properties"]
@@ -93,6 +97,44 @@ def test_openapi_documents_request_success_and_common_errors() -> None:
         assert {"code", "message", "details", "request_id"}.issubset(
             error_body_schema["properties"]
         )
+
+
+def test_router_not_found_uses_safe_error_envelope() -> None:
+    response = TestClient(create_contract_app()).get("/not-a-route")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "http_error",
+            "message": "The request could not be completed",
+        }
+    }
+
+
+def test_method_not_allowed_uses_envelope_and_preserves_allow_header() -> None:
+    response = TestClient(create_contract_app()).get("/contract-example")
+
+    assert response.status_code == 405
+    assert response.json() == {
+        "error": {
+            "code": "http_error",
+            "message": "The request could not be completed",
+        }
+    }
+    assert response.headers["allow"] == "POST"
+
+
+def test_http_exception_detail_is_not_exposed() -> None:
+    response = TestClient(create_contract_app()).get("/explicit-http-error")
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "error": {
+            "code": "http_error",
+            "message": "The request could not be completed",
+        }
+    }
+    assert "secret internal detail" not in response.text
 
 
 def test_contract_fixture_is_not_mounted_or_published_by_production_app() -> None:

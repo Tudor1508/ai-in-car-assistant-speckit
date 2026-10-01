@@ -49,4 +49,4 @@ Expected checks:
 5. Persistence tests use an isolated temporary store, verify initialize/write/read/cleanup, and leave no data in the contributor's default store.
 6. Schema-evolution tests verify fresh-store upgrade and repeat execution on a current store.
 
-The exact sequence will be checked from a clean environment after implementation and documented in `backend/README.md`.
+The documented setup, migration, compilation, and test commands were verified against the implementation on Python 3.13.15; persistence checks use isolated temporary stores.

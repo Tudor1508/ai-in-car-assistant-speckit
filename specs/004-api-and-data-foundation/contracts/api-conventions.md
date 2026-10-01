@@ -40,17 +40,19 @@ The concrete fields under `data` are owned by each feature contract. Optional me
 }
 ```
 
-`details` and `request_id` are optional. Field-level details may describe client-correctable validation failures. Invalid input returns HTTP 422. Unexpected failures return HTTP 500 with a generic safe code/message. Exception strings, stack traces, secrets, and internal paths are never returned.
+`details` and `request_id` are optional. Field-level details may describe client-correctable validation failures. Invalid input returns HTTP 422. Unexpected failures return HTTP 500 with a generic safe code/message. Framework-generated or raised HTTP errors use the same envelope and retain their HTTP status; standard route-not-found and method-not-allowed outcomes use HTTP 404 and 405 respectively. Preserve protocol-required response headers such as `Allow`, but do not return raw exception `detail`. Exception strings, stack traces, secrets, and internal paths are never returned.
 
 ## Behavior examples
 
 | Outcome | Required behavior |
 |---|---|
 | Valid test-fixture request | HTTP 2xx and the `{ "data": ... }` success shape. |
+| Missing route or resource | HTTP 404 and the common error shape; do not expose exception detail. |
+| Unsupported method for a route | HTTP 405 and the common error shape; preserve the `Allow` header. |
 | Invalid request field or constraint | HTTP 422 and the common error shape, with safe field details where useful. |
 | Unexpected internal failure | HTTP 500 and generic safe error shape; diagnostic detail remains server-side. |
 
-Automated contract checks prove all three outcomes against an isolated test application or handler fixture; no test endpoint is shipped in the product application. Other status/code mappings are defined by the feature that first needs them and documented in the generated contract.
+Automated contract checks prove the representative success, routing, validation, and unexpected-failure outcomes against an isolated test application or handler fixture; no test endpoint is shipped in the product application. Other domain-specific status/code mappings are defined by the feature that first needs them and documented in the generated contract.
 
 ## Compatibility
 

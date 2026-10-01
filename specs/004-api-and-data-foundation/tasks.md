@@ -126,3 +126,10 @@ No task in this list implements authentication, identity, roles, vehicles, route
 
 - [X] T012 Add an HTTP-level integration check in `backend/tests/test_api_conventions.py` using the owner-approved protocol and test client; send success, invalid-input, and unexpected-failure requests through the test application's routing, validation, handlers, and response serialization, then assert the approved statuses and bodies while confirming the production app keeps `/health` unchanged and exposes no test route, per Constitution V and US1/AC2â€“AC3.
 - [X] T013 Extend `backend/tests/test_api_conventions.py` to verify that the contract representation approved in T001 describes the representative request, success, and error shapes and status outcomes documented in `specs/004-api-and-data-foundation/contracts/api-conventions.md`; if the approved format provides a machine-readable production contract, also confirm the test fixture is absent from it, per FR-001â€“FR-002, SC-001â€“SC-002.
+
+## Phase 8: Convergence
+
+**Purpose**: Close remaining gaps found by checking emitted framework errors and contributor guidance against the approved contract and verification state.
+
+- [X] T014 Add a safe error-envelope handler and HTTP-level checks for framework-generated or raised HTTP errors that currently use FastAPI/Starlette defaults (including route-not-found and method-not-allowed); preserve the HTTP status, do not expose raw internal `detail`, and document the shared shape in `contracts/api-conventions.md`, per FR-004, Constitution IV, and the approved error-response decision (partial, HIGH).
+- [X] T015 Replace the future-tense clean-checkout verification statement at the end of `specs/004-api-and-data-foundation/quickstart.md` with the verified outcome and commands already recorded in the contributor guide, per FR-008, SC-005, and T010 (partial, MEDIUM).
