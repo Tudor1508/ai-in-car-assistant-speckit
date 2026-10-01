@@ -28,6 +28,9 @@ def success_envelope(data: Any) -> dict[str, Any]:
 def common_error_responses() -> dict[int, dict[str, Any]]:
     """OpenAPI response declarations shared by future API operations."""
     return {
+        401: {"model": ErrorEnvelope, "description": "Authentication is required or failed"},
+        403: {"model": ErrorEnvelope, "description": "The request is not authorized"},
+        409: {"model": ErrorEnvelope, "description": "The request conflicts with current account state"},
         404: {
             "model": ErrorEnvelope,
             "description": "The requested route or resource was not found",

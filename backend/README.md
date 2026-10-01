@@ -1,106 +1,75 @@
 # Drive Wise Backend
 
-The `backend/` area is the sole Python backend root. It owns authoritative
-business rules, protected data operations, and authorization when product work
-is introduced. The shared API and persistence foundations are technical
-infrastructure only; this feature adds no product workflow or model.
+`backend/` is the Python backend root. It owns input validation, authentication,
+and authorization for protected account operations. Feature 005 adds account
+self-service only; it does not add product workflows.
 
 ## Structure
 
-- `src/` is the source location for Python backend modules.
-- `src/main.py` contains the minimal FastAPI application and technical health
-	route.
-- `src/api/` contains shared response schemas, error handlers, and OpenAPI
-	response declarations for future operations.
-- `src/data/` contains the configured SQLAlchemy engine and session boundary.
-- `migrations/` contains the Alembic environment and infrastructure-only
-	baseline revision.
-- `tests/` contains backend checks.
-- Future backend modules belong under `src/`; add product behavior only through a
-	separate specification and explicit contract.
+- `src/main.py`: FastAPI application, exact-origin credentialed CORS, auth router,
+  and unchanged `GET /health` contract.
+- `src/auth/`: account registration/profile, Argon2id passwords, server sessions,
+  CSRF contexts, cookies, and authorization boundaries.
+- `src/data/`: SQLAlchemy engine/session and the Account, AuthSession, and
+  AnonymousCsrfContext models.
+- `migrations/`: Alembic baseline and auth schema revision.
+- `tests/`: temporary SQLite persistence, API, security, and authorization tests.
 
-## Prerequisites
+## Prerequisites and Setup
 
-- Python 3.11, 3.12, or 3.13.
-- PowerShell or another shell that can create and activate a Python virtual
-	environment.
-- SQLite is used only for local development and tests. No production database,
-  credentials, or external service is selected.
-
-## Local setup
-
-From `backend/`, create and activate a virtual environment, then install the
-runtime and development dependencies:
+Use Python 3.11–3.13. From `backend/`:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
-```
-
-The 004 direct dependency pins are Pydantic 2.13.5, SQLAlchemy 2.0.54, and
-Alembic 1.20.0. Existing FastAPI 0.115.6, Uvicorn 0.34.0, httpx 0.28.1, and
-pytest 8.3.4 pins remain unchanged.
-
-Do not create placeholder secrets. `DRIVE_WISE_DATABASE_URL` optionally
-overrides the default SQLite URL, which points to
-`backend/data/drive_wise.sqlite3`. That directory is ignored by Git and created
-when the database engine opens the local file. The default path is independent
-of the shell's current directory. Tests use isolated temporary SQLite files.
-
-Initialize or upgrade the local schema from `backend/`:
-
-```powershell
 python -m alembic upgrade head
 ```
 
-The current baseline contains migration bookkeeping only; it creates no product
-tables. Repeating the command leaves the database at the current revision.
+Approved new runtime dependency: `argon2-cffi==25.1.0`. Existing approved
+FastAPI, Uvicorn, Pydantic 2.13.5, SQLAlchemy 2.0.54, Alembic 1.20.0, httpx,
+and pytest pins are unchanged. SQLite is used only for local development and
+tests; no production database is selected.
 
-## Verification
+Copy values from [`.env.example`](.env.example) into the local environment if
+needed. `DRIVE_WISE_ALLOWED_ORIGINS` is a comma-separated allowlist of exact
+browser origins, for example `http://localhost:3000`; wildcard origins are
+rejected. `DRIVE_WISE_DATABASE_URL` optionally selects a local SQLite file. The
+default is ignored `backend/data/drive_wise.sqlite3`. No email credentials or
+other secrets are needed. Email addresses remain unverified and no email
+delivery is configured.
 
-Run these commands from `backend/`:
+## Run and Verify
 
 ```powershell
+python -m uvicorn src.main:app --host localhost --port 8000
 python -m compileall src
 python -m pytest
 ```
 
-The API convention is HTTP/JSON with FastAPI-generated OpenAPI 3.1. Future
-operation contracts use a `{ "data": ... }` success envelope and an
-`{ "error": { "code", "message", "details?", "request_id?" } }` error
-envelope. Invalid input returns HTTP 422; unexpected errors return HTTP 500
-with generic safe text. Internal diagnostics are not sent to clients. Contracts
-are backward-compatible by default; no URL versioning is introduced now, and
-an incompatible change requires an explicit decision and review. The generated
-OpenAPI document is not committed; examples and full conventions are in
-[`specs/004-api-and-data-foundation/contracts/api-conventions.md`](../specs/004-api-and-data-foundation/contracts/api-conventions.md)
-and persistence details are in
-[`specs/004-api-and-data-foundation/contracts/persistence.md`](../specs/004-api-and-data-foundation/contracts/persistence.md).
+The health response remains `{ "status": "ok" }`. API success and error
+envelopes follow feature 004. OpenAPI 3.1 is generated at `/openapi.json` and is
+not committed.
 
-## Start locally
+Sessions use `__Host-dw_session` with Secure, HttpOnly, SameSite=Lax, and Path=/.
+Sessions expire after 30 minutes idle or 8 hours absolute. State-changing calls
+require strict Origin/Referer validation and the synchronizer token in
+`X-CSRF-Token`. Bootstrap is `POST /auth/csrf/bootstrap`; it returns
+`{ "data": { "csrf_token": "..." } }`. Anonymous CSRF contexts are stored
+separately from authenticated sessions. Login revokes the anonymous context
+and rotates to a new session identifier and token. Only token/session digests
+are stored.
 
-```powershell
-python -m uvicorn src.main:app --host 127.0.0.1 --port 8000
-```
+Passwords use Argon2id with 19 MiB memory, 2 iterations, and parallelism 1.
+On the implementation machine (Python 3.13.15, Windows), ten local samples
+showed hash times of 0.0308?0.0548 seconds (median 0.0380) and verify times of
+0.0281?0.0482 seconds (median 0.0385). The launcher reports Python 3.13 only;
+Python 3.11 and 3.12 were unavailable, so those runtimes could not be measured.
+These local observations are not an SLA. The approved Argon2id parameters were
+not changed.
 
-The ready signal is Uvicorn reporting `http://127.0.0.1:8000`. In a second
-terminal, check availability:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:8000/health
-```
-
-The expected response is `{ "status": "ok" }`. Stop the server with `Ctrl+C`.
-
-## Boundary
-
-Frontend modules own presentation, user interaction, and client-side
-coordination. Any future operation crossing the boundary must use an explicit
-API contract defining request, response, and error shapes. Backend input
-validation and authorization for protected operations remain backend
-responsibilities. This foundation has no product endpoint, roles,
-authentication, product tables, or external service integration. SQLite is
-strictly the local/test store; no production database is selected.
-
-The root [README](../README.md) is the repository contributor entry point.
+Public registration assigns only `user`. A trusted operator assigns or changes
+privileged roles outside this feature, which revokes active sessions. Every
+role can manage only its own profile and password. Admin/producer dashboards,
+vehicles, routes, history, email delivery, and production database support are
+outside this feature.

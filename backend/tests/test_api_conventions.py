@@ -87,8 +87,8 @@ def test_openapi_documents_request_success_and_common_errors() -> None:
     success_schema = operation["responses"]["200"]["content"]["application/json"]["schema"]
     success_schema = schema["components"]["schemas"][success_schema["$ref"].split("/")[-1]]
     assert "data" in success_schema["properties"]
-    assert {"404", "405", "422", "500"}.issubset(operation["responses"])
-    for status in ("404", "405", "422", "500"):
+    assert {"401", "403", "404", "405", "409", "422", "500"}.issubset(operation["responses"])
+    for status in ("401", "403", "404", "405", "409", "422", "500"):
         error_schema = operation["responses"][status]["content"]["application/json"]["schema"]
         error_schema = schema["components"]["schemas"][error_schema["$ref"].split("/")[-1]]
         assert "error" in error_schema["properties"]

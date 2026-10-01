@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from typing import Iterator
 
-from sqlalchemy import Engine, create_engine as sqlalchemy_create_engine
+from sqlalchemy import Engine, create_engine as sqlalchemy_create_engine, event
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 
@@ -25,8 +25,16 @@ def create_engine(database_url: str | None = None) -> Engine:
         raise ValueError("Only SQLite URLs are supported by the local data foundation")
     if url.database not in (None, ":memory:"):
         Path(url.database).parent.mkdir(parents=True, exist_ok=True)
-        return sqlalchemy_create_engine(url, connect_args={"check_same_thread": False})
-    return sqlalchemy_create_engine(url)
+        engine = sqlalchemy_create_engine(url, connect_args={"check_same_thread": False})
+    else:
+        engine = sqlalchemy_create_engine(url)
+    if engine.dialect.name == "sqlite":
+        @event.listens_for(engine, "connect")
+        def enable_foreign_keys(connection, _record) -> None:
+            cursor = connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.close()
+    return engine
 
 
 def create_session_factory(engine: Engine | None = None) -> sessionmaker[Session]:
