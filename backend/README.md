@@ -70,6 +70,7 @@ not changed.
 
 Public registration assigns only `user`. A trusted operator assigns or changes
 privileged roles outside this feature, which revokes active sessions. Every
-role can manage only its own profile and password. Admin/producer dashboards,
-vehicles, routes, history, email delivery, and production database support are
-outside this feature.
+role can manage only its own profile and password. Vehicle CRUD is mounted at
+`/vehicles`; every operation uses the signed-in account as owner, and writes
+require the existing CSRF protection. Admin/producer dashboards, routes,
+history, email delivery, and production database support remain out of scope.

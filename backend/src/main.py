@@ -6,6 +6,7 @@ from src.auth.config import get_allowed_origins
 from src.auth.routes import router as auth_router
 from src.api.errors import install_error_handlers
 from src.data.database import create_engine
+from src.vehicles.routes import router as vehicles_router
 
 
 def create_app(engine: Engine | None = None) -> FastAPI:
@@ -19,6 +20,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
         allow_headers=["Content-Type", "X-CSRF-Token"],
     )
     application.include_router(auth_router)
+    application.include_router(vehicles_router)
     install_error_handlers(application)
 
     @application.get("/health")

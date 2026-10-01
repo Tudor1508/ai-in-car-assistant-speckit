@@ -47,6 +47,8 @@ def install_error_handlers(app: FastAPI) -> None:
             "invalid_current_password": "Current password is incorrect",
             "confirmation_required": "Confirmation is required",
             "not_found": "The requested resource was not found",
+            "vehicle_not_found": "The requested resource was not found",
+            "validation_error": "Vehicle details do not meet the requirements",
         }
         detail = exc.detail if isinstance(exc.detail, str) else ""
         code = detail if detail in safe_codes else "http_error"

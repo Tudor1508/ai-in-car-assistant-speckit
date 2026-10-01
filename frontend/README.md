@@ -1,9 +1,11 @@
 # Drive Wise Frontend
 
 The frontend uses Next.js 16 App Router, React 19, TypeScript, Redux Toolkit,
-and MUI 9. Authentication and self-profile screens live under `/login`,
-`/register`, and `/profile`; product dashboards and vehicle/route screens are
-not part of feature 005.
+and MUI 9. Public authentication screens live under `/login` and `/register`.
+The authenticated account layout shares navigation between `/profile` and
+`/vehicles`; vehicle data is held in the vehicles Redux slice and loaded through
+the shared credentialed API client. Route-planning and trip-history screens are
+not implemented yet.
 
 ## Local Development
 
