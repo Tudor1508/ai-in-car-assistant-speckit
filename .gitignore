@@ -5,6 +5,7 @@ dist/
 build/
 *.log
 .env*
+!backend/.env.example
 *.tsbuildinfo
 
 # Python
@@ -14,6 +15,10 @@ __pycache__/
 venv/
 *.egg-info/
 backend/data/
+frontend/test-results/
+frontend/playwright-report/
+/frontend/.pw-browsers/
+**/.pytest_cache/
 
 # Universal
 .DS_Store

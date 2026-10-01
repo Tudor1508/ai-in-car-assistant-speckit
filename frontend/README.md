@@ -1,48 +1,54 @@
-# Frontend
+# Drive Wise Frontend
 
-The `frontend/` area owns Drive Wise presentation, user interaction, and client-side coordination.
-
-## Established Stack
-
-The frontend uses Next.js 16.3.7 with App Router, React 19.3.0, TypeScript 5.9.3, Redux Toolkit 2.13.0 with React Redux 9.3.0, and Material UI 9.4.0. Dependencies are pinned in `package.json` and `package-lock.json`. Redux owns shared client state; transient interaction state may remain local to a component.
-
-## Structure
-
-- `src/` is the location for frontend source code.
-- `tests/` is the location for frontend checks once their tooling is selected.
-
-## Boundary
-
-Authoritative business rules, protected data operations, and authorization belong to the Python backend. Any future operation crossing the frontend/backend boundary must use an explicit API contract. This skeleton defines no endpoint, transport, or request/response/error schema.
+The frontend uses Next.js 16 App Router, React 19, TypeScript, Redux Toolkit,
+and MUI 9. Authentication and self-profile screens live under `/login`,
+`/register`, and `/profile`; product dashboards and vehicle/route screens are
+not part of feature 005.
 
 ## Local Development
 
-### Prerequisites
-
-- Node.js 20.9.0 or newer
-- npm
-
-### Install and Run
-
-From `frontend/`, install the locked dependencies and start the development server:
+Prerequisites: Node.js 20.9+ and npm. From `frontend/`:
 
 ```sh
 npm ci
 npm run dev
 ```
 
-The server reports ready at `http://localhost:3000`.
+Set `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` if the backend runs on a
+different origin. The backend must allow the exact frontend origin, normally
+`DRIVE_WISE_ALLOWED_ORIGINS=http://localhost:3000`. Both browser and API use
+localhost so the approved Secure cookie works in the browser secure context.
 
-### Validate
+## Verify
 
 ```sh
-npx tsc --noEmit
+npm run type-check
 npm run build
-npm run start
+npx playwright install chromium
+npm run test:e2e
 ```
 
-`npm run start` serves the production build and is run after `npm run build`. The root [README](../README.md) is the repository contributor entry point.
+The standard run uses Playwright-managed Chromium. On Windows, when that
+browser download is unavailable but Microsoft Edge is installed, the same
+Chromium-backed suite can use Edge with:
 
-If installation reports an engine mismatch, confirm Node.js is at least 20.9.0. If dependency installation differs from the manifest, use `npm ci` to reproduce the committed lockfile rather than changing versions without approval.
+```powershell
+$env:PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
+npm run test:e2e
+```
 
-No Drive Wise product workflow is implemented by this skeleton.
+The feature 005 verification run used this Edge executable; the test suite
+still exercises Chromium behavior and does not change the production browser
+or cookie policy.
+
+The exact approved browser test dependency is `@playwright/test==1.56.1`.
+Playwright starts the frontend and a backend process with a unique temporary
+SQLite file, applies migrations, then removes the file. Browser requests use
+the feature 004 `{data: ...}` / `{error: ...}` envelopes. The client keeps the
+raw CSRF token in memory only and sends it in `X-CSRF-Token`; it never reads or
+stores the HttpOnly session cookie.
+
+Registration never presents a role selector. Profiles show the email as
+`Neverificat`, a read-only role, and only own-account actions. The account
+screens follow the visual references in `docs/reference-ui/login.png`,
+`register.png`, and `profile.png`, excluding out-of-scope product navigation.

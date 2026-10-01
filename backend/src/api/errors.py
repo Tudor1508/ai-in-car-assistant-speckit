@@ -38,13 +38,26 @@ def install_error_handlers(app: FastAPI) -> None:
     async def http_error_handler(
         request: Request, exc: StarletteHTTPException
     ) -> JSONResponse:
+        safe_codes = {
+            "invalid_origin": "The request origin is not allowed",
+            "invalid_csrf": "The request could not be verified",
+            "authentication_required": "Authentication is required",
+            "invalid_credentials": "Email or password is incorrect",
+            "email_unavailable": "Email is unavailable",
+            "invalid_current_password": "Current password is incorrect",
+            "confirmation_required": "Confirmation is required",
+            "not_found": "The requested resource was not found",
+        }
+        detail = exc.detail if isinstance(exc.detail, str) else ""
+        code = detail if detail in safe_codes else "http_error"
+        message = safe_codes.get(code, "The request could not be completed")
         return JSONResponse(
             status_code=exc.status_code,
             headers=exc.headers,
             content={
                 "error": {
-                    "code": "http_error",
-                    "message": "The request could not be completed",
+                    "code": code,
+                    "message": message,
                 }
             },
         )

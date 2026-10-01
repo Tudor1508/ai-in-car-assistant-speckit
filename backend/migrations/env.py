@@ -4,6 +4,7 @@ from alembic import context
 from sqlalchemy.engine import Connection
 
 from src.data.database import create_engine, get_database_url
+from src.data.models import Base
 
 config = context.config
 database_url = os.environ.get("DRIVE_WISE_DATABASE_URL") or config.get_main_option(
@@ -13,8 +14,7 @@ if database_url == "sqlite:///data/drive_wise.sqlite3":
     database_url = get_database_url()
 config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
-# No product metadata exists in this foundation feature.
-target_metadata = None
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

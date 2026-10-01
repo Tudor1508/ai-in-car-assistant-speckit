@@ -12,7 +12,7 @@ export default function RootLayout({
   children: ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ro">
       <body>
         <AppRouterCacheProvider>
           <Providers>{children}</Providers>

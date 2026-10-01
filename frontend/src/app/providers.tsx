@@ -5,7 +5,9 @@ import { useRef, type ReactNode } from "react";
 import { Provider as ReduxProvider } from "react-redux";
 import { makeStore, type AppStore } from "@/lib/store";
 
-const theme = createTheme();
+const theme = createTheme({
+  palette: { mode: "dark", primary: { main: "#31d8ef" }, background: { default: "#081523", paper: "#102235" } },
+});
 
 export function Providers({ children }: Readonly<{ children: ReactNode }>) {
   const storeRef = useRef<AppStore | null>(null);
