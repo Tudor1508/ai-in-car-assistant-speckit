@@ -6,6 +6,7 @@ build/
 *.log
 .env*
 !backend/.env.example
+!frontend/.env.example
 *.tsbuildinfo
 
 # Python

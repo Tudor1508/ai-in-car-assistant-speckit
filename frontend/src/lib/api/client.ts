@@ -1,5 +1,10 @@
-const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+function getApiBase(): string {
+  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!apiBase) throw new Error("NEXT_PUBLIC_API_BASE_URL must be configured.");
+  return apiBase.replace(/\/$/, "");
+}
 let csrfToken: string | null = null;
+let csrfBootstrapPromise: Promise<string> | null = null;
 
 type SuccessEnvelope<T> = { data: T };
 type ApiErrorDetails = Array<{ location?: unknown[]; message?: string }>;
@@ -24,20 +29,29 @@ export class ApiClientError extends Error {
 }
 
 async function bootstrapCsrf(): Promise<string> {
-  const response = await fetch(`${apiBase}/auth/csrf/bootstrap`, {
-    method: "POST",
-    credentials: "include",
-  });
-  const body = (await response.json()) as SuccessEnvelope<{ csrf_token: string }> & ErrorEnvelope;
-  if (!response.ok) {
-    throw new ApiClientError(
-      body.error?.code ?? "request_failed",
-      body.error?.message ?? "The request could not be completed",
-      body.error?.details,
-    );
+  if (!csrfBootstrapPromise) {
+    csrfBootstrapPromise = (async () => {
+      const response = await fetch(`${getApiBase()}/auth/csrf/bootstrap`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const body = (await response.json()) as SuccessEnvelope<{ csrf_token: string }> & ErrorEnvelope;
+      if (!response.ok) {
+        throw new ApiClientError(
+          body.error?.code ?? "request_failed",
+          body.error?.message ?? "The request could not be completed",
+          body.error?.details,
+        );
+      }
+      csrfToken = body.data.csrf_token;
+      return csrfToken;
+    })();
   }
-  csrfToken = body.data.csrf_token;
-  return csrfToken;
+  try {
+    return await csrfBootstrapPromise;
+  } finally {
+    csrfBootstrapPromise = null;
+  }
 }
 
 export async function apiRequest<T>(
@@ -50,13 +64,26 @@ export async function apiRequest<T>(
   if (!["GET", "HEAD"].includes(method)) {
     headers["X-CSRF-Token"] = csrfToken ?? (await bootstrapCsrf());
   }
-  const response = await fetch(`${apiBase}${path}`, {
+  const send = () => fetch(`${getApiBase()}${path}`, {
     method,
     headers,
     credentials: "include",
     body: payload === undefined ? undefined : JSON.stringify(payload),
   });
-  const body = (await response.json()) as SuccessEnvelope<T> & ErrorEnvelope;
+  let response = await send();
+  let body = (await response.json()) as SuccessEnvelope<T> & ErrorEnvelope;
+  // The server rotates CSRF tokens during bootstrap and sessions can also
+  // expire while this tab remains open. Refresh once when a mutation is
+  // rejected for a stale token, then retry with the newly bound token.
+  if (
+    response.status === 403 &&
+    body.error?.code === "invalid_csrf" &&
+    !["GET", "HEAD"].includes(method)
+  ) {
+    headers["X-CSRF-Token"] = await bootstrapCsrf();
+    response = await send();
+    body = (await response.json()) as SuccessEnvelope<T> & ErrorEnvelope;
+  }
   if (!response.ok) {
     throw new ApiClientError(
       body.error?.code ?? "request_failed",

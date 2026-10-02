@@ -32,6 +32,7 @@ def test_migration_creates_auth_tables_and_can_downgrade(tmp_path: Path) -> None
             "alembic_version",
             "anonymous_csrf_contexts",
             "auth_sessions",
+            "trip_favorites",
             "vehicles",
         }
     finally:
@@ -81,6 +82,7 @@ def test_models_persist_account_sessions_and_anonymous_context(tmp_path: Path) -
             "accounts",
             "anonymous_csrf_contexts",
             "auth_sessions",
+            "trip_favorites",
             "vehicles",
         }
     finally:

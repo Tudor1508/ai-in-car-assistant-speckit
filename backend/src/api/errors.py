@@ -49,6 +49,8 @@ def install_error_handlers(app: FastAPI) -> None:
             "not_found": "The requested resource was not found",
             "vehicle_not_found": "The requested resource was not found",
             "validation_error": "Vehicle details do not meet the requirements",
+            "route_not_found": "No drivable route could be calculated",
+            "routing_provider_unavailable": "Route data is temporarily unavailable",
         }
         detail = exc.detail if isinstance(exc.detail, str) else ""
         code = detail if detail in safe_codes else "http_error"

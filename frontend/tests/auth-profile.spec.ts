@@ -12,7 +12,8 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/profile");
 }
 
 test("profile shows unverified email, read-only role, and remains usable at narrow and wide widths", async ({ page }) => {
@@ -58,7 +59,8 @@ test("password mismatch is actionable and failed change leaves the current passw
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/$/);
+  await page.goto("/profile");
 
   await page.getByRole("button", { name: "Schimbă parola" }).click();
   await page.getByRole("textbox", { name: "Parola curentă", exact: true }).fill("ExamplePass1!");
@@ -72,7 +74,7 @@ test("password mismatch is actionable and failed change leaves the current passw
   await expect(page.getByRole("alert").filter({ hasText: "Emailul sau parola sunt incorecte." })).toBeVisible();
   await page.getByLabel("Parolă").fill("NewPassword2!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page).toHaveURL(/\/$/);
 });
 
 test("deactivation requires the current password and explicit confirmation", async ({ page }) => {
