@@ -21,6 +21,32 @@ def _required_text(name: str) -> str:
     return value
 
 
+def _configured_text(name: str, default: str) -> str:
+    return os.environ.get(name, "").strip() or default
+
+
+def _configured_positive_int(name: str, default: int) -> int:
+    value = _configured_text(name, str(default))
+    try:
+        parsed = int(value)
+    except ValueError as error:
+        raise TripConfigurationError(f"{name} must be an integer") from error
+    if parsed <= 0:
+        raise TripConfigurationError(f"{name} must be greater than zero")
+    return parsed
+
+
+def _configured_positive_float(name: str, default: float) -> float:
+    value = _configured_text(name, str(default))
+    try:
+        parsed = float(value)
+    except ValueError as error:
+        raise TripConfigurationError(f"{name} must be a number") from error
+    if parsed <= 0:
+        raise TripConfigurationError(f"{name} must be greater than zero")
+    return parsed
+
+
 def _positive_int(name: str) -> int:
     value = _required_text(name)
     try:
@@ -43,21 +69,10 @@ def _nonnegative_int(name: str) -> int:
     return parsed
 
 
-def _positive_float(name: str) -> float:
-    value = _required_text(name)
+def _configured_positive_int_list(name: str, default: tuple[int, ...]) -> tuple[int, ...]:
+    raw = _configured_text(name, ",".join(str(value) for value in default))
     try:
-        parsed = float(value)
-    except ValueError as error:
-        raise TripConfigurationError(f"{name} must be a number") from error
-    if parsed <= 0:
-        raise TripConfigurationError(f"{name} must be greater than zero")
-    return parsed
-
-
-def _positive_int_list(name: str) -> tuple[int, ...]:
-    values = _required_text(name).split(",")
-    try:
-        parsed = tuple(int(value.strip()) for value in values)
+        parsed = tuple(int(value.strip()) for value in raw.split(","))
     except ValueError as error:
         raise TripConfigurationError(f"{name} must be a comma-separated list of integers") from error
     if not parsed or any(value <= 0 for value in parsed):
@@ -79,21 +94,29 @@ class TripSettings:
 
     @classmethod
     def from_environment(cls) -> "TripSettings":
-        base_url = _required_text("OPENROUTESERVICE_BASE_URL").rstrip("/")
+        base_url = _configured_text(
+            "OPENROUTESERVICE_BASE_URL", "https://api.heigit.org"
+        ).rstrip("/")
         parsed_url = urlparse(base_url)
         if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
             raise TripConfigurationError("OPENROUTESERVICE_BASE_URL must be an absolute HTTP(S) URL")
+        # HeiGIT moved the public services to api.heigit.org. Keep older local
+        # .env files working by translating their previous public host.
+        if parsed_url.netloc.lower() == "api.openrouteservice.org" and not parsed_url.path:
+            base_url = "https://api.heigit.org"
 
         return cls(
             api_key=_required_text("OPENROUTESERVICE_API_KEY"),
             base_url=base_url,
-            timeout_seconds=_positive_float("OPENROUTESERVICE_TIMEOUT_SECONDS"),
-            geocode_min_chars=_positive_int("OPENROUTESERVICE_GEOCODE_MIN_CHARS"),
-            poi_corridor_meters=_positive_float("OPENROUTESERVICE_POI_CORRIDOR_METERS"),
-            poi_limit=_positive_int("OPENROUTESERVICE_POI_LIMIT"),
-            charging_category_ids=_positive_int_list("OPENROUTESERVICE_CHARGING_CATEGORY_IDS"),
-            fuel_category_id=_positive_int("OPENROUTESERVICE_FUEL_CATEGORY_ID"),
-            max_stops=_positive_int("TRIP_MAX_STOPS"),
+            timeout_seconds=_configured_positive_float("OPENROUTESERVICE_TIMEOUT_SECONDS", 20),
+            geocode_min_chars=_configured_positive_int("OPENROUTESERVICE_GEOCODE_MIN_CHARS", 3),
+            poi_corridor_meters=_configured_positive_float("OPENROUTESERVICE_POI_CORRIDOR_METERS", 1000),
+            poi_limit=_configured_positive_int("OPENROUTESERVICE_POI_LIMIT", 50),
+            charging_category_ids=_configured_positive_int_list(
+                "OPENROUTESERVICE_CHARGING_CATEGORY_IDS", (593, 594)
+            ),
+            fuel_category_id=_configured_positive_int("OPENROUTESERVICE_FUEL_CATEGORY_ID", 596),
+            max_stops=_configured_positive_int("TRIP_MAX_STOPS", 5),
         )
 
 

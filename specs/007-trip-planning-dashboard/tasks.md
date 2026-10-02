@@ -45,7 +45,7 @@ description: "Task list for the trip planning dashboard feature"
 - [X] T006 [US1] Add live place-search integration tests through the real FastAPI router and configured ORS service for authentication, query validation, returned/empty suggestions, and real provider errors in `backend/tests/test_trip_places.py`; source queries from environment, not fixed locations or response fixtures.
 - [X] T007 [US1] Add live preview integration tests through the real FastAPI router, database, and configured ORS service for owner-scoped vehicles, current-range first leg, maximum-range later legs, detours, stop limit, configured no-feasible-station routes, CSRF, and real provider failures in `backend/tests/test_trip_preview.py`; do not use fake providers or hardcoded coordinates/ranges.
 - [X] T008 [US1] Add Playwright scenarios through the actual frontend, mounted backend endpoints, live ORS provider, and configured OSM tiles for place selection, current-location permission, vehicle states, route details, live station results, incomplete plans, loading/errors/retry, keyboard use, and narrow layout in `frontend/tests/trip-planning.spec.ts`; do not intercept app endpoints or mock provider/map responses.
-- [X] T009 [P] [US1] Update the successful-login destination assertion to `/` and retain profile/sign-out regression coverage in `frontend/tests/auth-session.spec.ts`.
+- [X] T009 [P] [US1] Update the successful-login destination assertion to `/trip` and retain profile/sign-out regression coverage in `frontend/tests/auth-session.spec.ts`.
 
 ### Implementation for User Story 1
 
@@ -59,8 +59,8 @@ description: "Task list for the trip planning dashboard feature"
 - [X] T017 [P] [US1] Build the owned-vehicle selector and current fuel/battery percentage control in `frontend/src/features/trips/components/VehicleRangeControl.tsx`; use the existing vehicle state/API, constrain percentage to 0-100, and show estimated current range from the saved vehicle maximum.
 - [X] T018 [P] [US1] Build a client-only Leaflet map in `frontend/src/features/trips/components/RouteMap.tsx` and load its CSS from `frontend/src/app/layout.tsx`; show route geometry, origin/destination, ordered stations, configurable tile URL, persistent OSM attribution, and no off-viewport tile prefetch.
 - [X] T019 [P] [US1] Build route metrics, per-leg distance, station details, driving-time caveat, and complete/incomplete feasibility states in `frontend/src/features/trips/components/RouteSummary.tsx` using accessible MUI components.
-- [X] T020 [US1] Compose the planner in `frontend/src/features/trips/components/TripPlanningDashboard.tsx` and render it at `/` from `frontend/src/app/(account)/page.tsx`; replace/remove `frontend/src/app/page.tsx`, load the authenticated user's vehicles, handle no-vehicle and expired-session states, and coordinate preview loading/results through Redux.
-- [X] T021 [P] [US1] Add **Plan a trip** as the root navigation destination and active-page state in `frontend/src/components/AppNavigation.tsx`; navigate to `/` after login in `frontend/src/features/auth/components/LoginForm.tsx` while retaining `/profile` and `/vehicles` destinations.
+- [X] T020 [US1] Compose the planner in `frontend/src/features/trips/components/TripPlanningDashboard.tsx` and render it at `/trip` from `frontend/src/app/(account)/trip/page.tsx`; load the authenticated user's vehicles, handle no-vehicle and expired-session states, and coordinate preview loading/results through Redux.
+- [X] T021 [P] [US1] Add **Plan a trip** as the navigation destination and active-page state in `frontend/src/components/AppNavigation.tsx`; navigate to `/trip` after login in `frontend/src/features/auth/components/LoginForm.tsx` while retaining `/profile` and `/vehicles` destinations.
 - [ ] T022 [US1] Run the live ORS integration tests T006-T008 sequentially using configured environment inputs, then run the independent login regression in `frontend/tests/auth-session.spec.ts`; resolve failures without substituting provider mocks.
 
 **Checkpoint**: A user with an owned vehicle can independently plan a trip and see complete or explicitly incomplete range feasibility; favorite persistence is not required for this story.
@@ -167,9 +167,9 @@ Task: T019 - Build route summary in frontend/src/features/trips/components/Route
 ## Phase 6: Convergence
 
 - [X] T035 Add debounced place suggestions with explicit selectable results for origin and destination, require the user to select a suggestion before previewing, and preserve editable input on unresolved queries per FR-002 and US1/AC1 (partial).
-- [X] T036 Keep unreachable route segments out of the planned route geometry and distinguish partial leg details from a complete itinerary when no feasible station chain reaches the destination per FR-009 and SC-004 (partial).
+- [X] T036 Keep unreachable route segments out of the planned route geometry and distinguish partial leg details from a complete itinerary when no feasible station chain reaches the destination per FR-008 and SC-004 (partial).
 
 ## Phase 7: Convergence
 
 - [X] T037 Add an explicit **Use current location** origin action that requests browser geolocation only after user action, resolves the coordinates into the planner's origin, and preserves editable fields with recoverable permission/unavailable feedback per FR-002 and US1/AC1 (missing).
-- [X] T038 Render the authenticated trip dashboard at `/` and align successful-login navigation, shared navigation, active-page state, and route tests with `/` per FR-001 and plan: root dashboard (contradicts).
+- [X] T038 Render the authenticated trip dashboard at `/trip` and align successful-login navigation, shared navigation, active-page state, and route tests with `/trip`.

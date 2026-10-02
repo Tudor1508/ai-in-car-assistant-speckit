@@ -19,7 +19,7 @@ export function LoginForm() {
       .then((account) => {
         if (!active) return;
         dispatch(accountLoaded(account));
-        router.replace("/");
+        router.replace("/trip");
       })
       .catch(() => {
         // An anonymous or expired session should be able to use the login form.
@@ -33,7 +33,7 @@ export function LoginForm() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setBusy(true);
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
-    try { const result = await loginAccount(values as { email: string; password: string }); dispatch(accountLoaded(result.account)); router.push("/"); }
+    try { const result = await loginAccount(values as { email: string; password: string }); dispatch(accountLoaded(result.account)); router.push("/trip"); }
     catch (e) { setError(e instanceof Error ? e.message : "Emailul sau parola sunt incorecte."); }
     finally { setBusy(false); }
   }

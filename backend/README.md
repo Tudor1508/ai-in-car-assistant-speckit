@@ -17,8 +17,8 @@ Copy-Item .env.example .env
 ```
 
 Fill the ignored `.env` from `.env.example`. Configure exact allowed frontend
-origins, server bind address/port, all `OPENROUTESERVICE_*` provider settings,
-and `TRIP_MAX_STOPS`. Add a rotated ORS key locally. For live integration
+origins and server bind address/port. Add a HeiGIT API key locally; provider
+URL, timeouts, POI categories, and trip limits use built-in defaults. For live integration
 coverage, configure the documented `TRIP_TEST_*` account, vehicle, place, and
 range inputs. Never put credentials or real test account details in examples or
 commits. `DRIVE_WISE_DATABASE_URL` may select a local SQLite database; otherwise

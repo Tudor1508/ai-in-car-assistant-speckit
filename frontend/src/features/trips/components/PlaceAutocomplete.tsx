@@ -119,7 +119,7 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
       {allowCurrentLocation && <Button type="button" onClick={useCurrentLocation} sx={{ alignSelf: "flex-start" }}>Folosește locația curentă</Button>}
       {locationError && <Alert severity="warning" role="alert">{locationError}</Alert>}
       {searchError && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => setRetryVersion((current) => current + 1)}>Reîncearcă căutarea</Button>}>{searchError}</Alert>}
-      {!searchError && query.length >= configuredMinChars && !loading && suggestions.length === 0 && (
+      {!searchError && selected?.label !== value && query.length >= configuredMinChars && !loading && suggestions.length === 0 && (
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           <Alert severity="info" sx={{ flex: 1 }}>Nu am găsit sugestii</Alert>
           <Button type="button" onClick={() => setRetryVersion((current) => current + 1)}>Reîncearcă căutarea</Button>

@@ -2,9 +2,9 @@
 
 ## Entry and navigation
 
-- The signed-in dashboard is `/`, rendered inside the existing authenticated account layout.
-- Successful sign-in navigates to `/`. Shared navigation marks **Plan a trip** active and continues to expose existing **My vehicles**, **Profile**, and **Log out** actions.
-- Signed-out access to `/` redirects to `/login`; an expired session clears account-specific trip state and redirects to sign-in.
+- The signed-in dashboard is `/trip`, rendered inside the existing authenticated account layout. `/` and `/trips` redirect to `/trip`.
+- Successful sign-in navigates to `/trip`. Shared navigation marks **Plan a trip** active and continues to expose existing **My vehicles**, **Profile**, and **Log out** actions.
+- Signed-out access to `/trip` redirects to `/login`; an expired session clears account-specific trip state and redirects to sign-in.
 - `/profile`, `/vehicles`, registration, sign-in, and sign-out retain existing behavior.
 
 ## Planner controls

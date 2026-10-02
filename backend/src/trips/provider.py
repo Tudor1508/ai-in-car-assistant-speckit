@@ -28,7 +28,7 @@ class ORSProvider:
 
     def autocomplete(self, query: str) -> list[PlaceSuggestion]:
         payload = self._get_json(
-            "/geocode/autocomplete",
+            "/pelias/v1/autocomplete",
             params={"text": query, "size": self._settings.poi_limit},
         )
         features = payload.get("features")
@@ -76,7 +76,7 @@ class ORSProvider:
         if len(coordinates) < 2:
             raise ValueError("Directions require an origin and destination")
         payload = self._post_json(
-            "/v2/directions/driving-car/geojson",
+            "/openrouteservice/v2/directions/driving-car/geojson",
             {
                 "coordinates": [[longitude, latitude] for longitude, latitude in coordinates],
                 "instructions": False,

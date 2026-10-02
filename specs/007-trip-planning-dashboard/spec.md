@@ -61,15 +61,14 @@ As a signed-in user, I want to save a route as a favorite and see my saved route
 - **FR-002**: The dashboard MUST let the user specify an origin and a destination by choosing suggested places; it MUST allow the user to use their current location as the origin after granting location permission.
 - **FR-003**: The dashboard MUST let the user select a vehicle from their own saved vehicles. If none exist, it MUST explain that a vehicle is required and provide a path to My vehicles.
 - **FR-004**: For the selected vehicle, the user MUST be able to enter the current fuel or battery level as a percentage. The system MUST estimate the currently available range from that percentage and the vehicle's saved range, then compare it with the planned route distance.
-- **FR-005**: The dashboard MUST compare route distance with the selected vehicle's estimated current range, derived from its current fuel or battery percentage and saved maximum range.
-- **FR-006**: When the route exceeds current range, the dashboard MUST recommend compatible refueling or charging stations reachable within that range and include the recommended stops in the route preview.
-- **FR-007**: For subsequent route legs, the dashboard MUST use the selected vehicle's saved maximum range to identify and add further compatible stops as needed, then recalculate the route through those stops.
-- **FR-008**: The dashboard MUST show the planned route on a map with total distance, estimated travel time, recommended stops, and understandable leg distances.
-- **FR-009**: If a compatible station cannot be found within a required leg's range, or locations cannot be resolved, no route is available, or a service fails, the dashboard MUST give understandable feedback, preserve entered trip details, and allow correction or retry. It MUST NOT present an incomplete route as fully planned.
-- **FR-010**: The user MUST be able to save a route after entering its origin and destination and see favorite routes beneath the location fields. Choosing a favorite MUST populate the origin and destination fields without automatically requesting a route preview.
-- **FR-011**: Favorites MUST belong to the signed-in account and MUST NOT be visible to another account.
-- **FR-012**: The feature MUST preserve existing registration, sign-in, profile, vehicle-management, and sign-out behavior apart from directing a newly signed-in user to the trip-planning dashboard.
-- **FR-013**: The dashboard MUST remain usable on supported screen sizes and through keyboard navigation, with accessible labels and understandable error messages.
+- **FR-005**: When the route exceeds current range, the dashboard MUST recommend compatible refueling or charging stations reachable within that range and include the recommended stops in the route preview.
+- **FR-006**: For subsequent route legs, the dashboard MUST use the selected vehicle's saved maximum range to identify and add further compatible stops as needed, then recalculate the route through those stops.
+- **FR-007**: The dashboard MUST show the planned route on a map with total distance, estimated travel time, recommended stops, and understandable leg distances.
+- **FR-008**: If a compatible station cannot be found within a required leg's range, or locations cannot be resolved, no route is available, or a service fails, the dashboard MUST give understandable feedback, preserve entered trip details, and allow correction or retry. It MUST NOT present an incomplete route as fully planned.
+- **FR-009**: The user MUST be able to save a route after entering its origin and destination and see favorite routes beneath the location fields. Choosing a favorite MUST populate the origin and destination fields without automatically requesting a route preview.
+- **FR-010**: Favorites MUST belong to the signed-in account and MUST NOT be visible to another account.
+- **FR-011**: The feature MUST preserve existing registration, sign-in, profile, vehicle-management, and sign-out behavior apart from directing a newly signed-in user to the trip-planning dashboard.
+- **FR-012**: The dashboard MUST remain usable on supported screen sizes and through keyboard navigation, with accessible labels and understandable error messages.
 
 ### Key Entities
 

@@ -1,5 +1,5 @@
-import { TripPlanningDashboard } from "@/features/trips/components/TripPlanningDashboard";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return <TripPlanningDashboard />;
+  redirect("/trip");
 }

@@ -26,11 +26,11 @@ Add an authenticated trip-planning dashboard as the primary post-login page. Reu
 
 **Constraints**: Keep the ORS key server-side. Require API base URLs, allowed origins, provider endpoints, limits/timeouts, POI corridor, maximum stop count, test locations/ranges, and map tiles through environment configuration; remove source-coded fallbacks for frontend API URLs and backend allowed origins. Do not add hardcoded credentials, locations, coordinates, route responses, or mocks. Use existing authenticated account and CSRF dependencies for preview and favorite creation; preview consumes provider quota even though it does not persist a trip. Derive selected vehicle range/type from an owner-scoped backend lookup rather than trusting client vehicle fields. Preserve existing profile, vehicle, auth, and sign-out behavior. Show visible OSM attribution, respect tile caching and Referer policy, and do not prefetch/offline-download tiles. OSM station records do not guarantee live availability or completeness.
 
-**Scale/Scope**: One primary authenticated dashboard at `/`, one favorite-route entity and migration, one trip API router for place suggestions, route preview, and favorite list/create, one client-only map, and focused API/component/browser coverage. No trip history, analytics, alternate route styles, or stop editing UI.
+**Scale/Scope**: One primary authenticated dashboard at `/trip`, one favorite-route entity and migration, one trip API router for place suggestions, route preview, and favorite list/create, one client-only map, and focused API/component/browser coverage. No trip history, analytics, alternate route styles, or stop editing UI.
 
 ## Design Decisions
 
-- Replace the currently empty `/` page with the account-layout trip dashboard. After login, navigate to `/`; retain `/profile` and `/vehicles` unchanged and add the dashboard to shared navigation.
+- After login, navigate to `/trip`; retain `/profile` and `/vehicles` unchanged and add the dashboard to shared navigation.
 - Add authenticated `GET /trips/places`, CSRF-protected `POST /trips/preview`, `GET /trips/favorites`, and CSRF-protected `POST /trips/favorites`. Preview is not persisted but consumes provider quota. Every operation requires an active account.
 - Use ORS Pelias autocomplete, directions, and OpenPOI from one backend provider adapter. Validate and normalize external responses before returning application contracts; translate provider timeout, rate limit, malformed response, and no-result cases to safe error/status results.
 - Start with a direct driving route and query compatible station POIs around its geometry. Iterate from origin to destination: use `vehicle.range_km * current_level_percent / 100` for the initial leg, then `vehicle.range_km` after each planned stop, assuming the driver restores the vehicle to full range at each stop. Candidate legs include road detours; choose a reachable station that makes forward route progress. Recheck candidates along updated route geometry, respect a configured maximum stop count, and recalculate final directions through the ordered stops. If no feasible candidate exists, return a clear incomplete-range result instead of claiming the route is complete. Estimates do not guarantee real consumption or station availability.
@@ -96,10 +96,10 @@ backend/
 
 frontend/
 ├── src/
-│   ├── app/(account)/page.tsx               # Authenticated / dashboard
+│   ├── app/(account)/trip/page.tsx               # Authenticated / dashboard
 │   ├── app/(account)/layout.tsx             # Existing account shell
 │   ├── components/AppNavigation.tsx          # Add Plan a trip destination
-│   ├── features/auth/components/LoginForm.tsx # Navigate to / after login
+│   ├── features/auth/components/LoginForm.tsx # Navigate to /trip after login
 │   ├── features/trips/
 │   │   ├── tripsApi.ts
 │   │   ├── tripsSlice.ts
@@ -117,7 +117,7 @@ frontend/
 └── .env.example
 ```
 
-**Structure Decision**: Extend the established two-project web app and its existing feature-module/API boundaries. Reuse account and vehicle modules, place the dashboard at the empty root route under the authenticated route group, and keep external-service logic in a backend provider adapter. The root page currently returns `null`; replace it with the account-group route and remove the duplicate root page file to preserve a single `/` route.
+**Structure Decision**: Extend the established two-project web app and its existing feature-module/API boundaries. Reuse account and vehicle modules, place the dashboard at the /trip under the authenticated route group, and keep external-service logic in a backend provider adapter.
 
 ## Post-Design Constitution Check
 
