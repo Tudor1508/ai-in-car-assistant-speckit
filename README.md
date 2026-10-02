@@ -1,40 +1,38 @@
 # Drive Wise
 
-This repository currently establishes the technical skeleton and contributor boundaries for Drive Wise. Product functionality is not implemented by this work.
+Drive Wise is a two-project web application. The frontend uses Next.js, React,
+TypeScript, Redux Toolkit, MUI, and Leaflet. The backend uses FastAPI, SQLAlchemy,
+and SQLite for local development. The backend owns authentication, vehicle data,
+trip calculations, provider access, and account-scoped favorite routes.
 
-## Repository Structure
+## Feature 007: Trip Planning Dashboard
 
-```text
-frontend/
-├── README.md
-├── src/
-└── tests/
+The signed-in dashboard is available at `/`. Users can choose suggested places,
+select one of their vehicles, preview a range-aware route, and save favorite
+origin/destination pairs. `/profile` and `/vehicles` remain available from the
+account navigation. OpenRouteService credentials are used by the backend only.
 
-backend/
-├── README.md
-├── src/
-└── tests/
+## Local development
 
-specs/001-app-skeleton/
-└── contracts/README.md
+Copy `backend/.env.example` to `backend/.env` and `frontend/.env.example` to
+`frontend/.env.local`, then fill the values for the local setup. Use a rotated
+OpenRouteService key in the ignored backend file. Keep test account inputs
+private and use environment-supplied place queries and ranges; the examples
+contain placeholders only.
+
+Install dependencies with `python -m pip install -r requirements-dev.txt` from
+`backend/` and `npm ci` from `frontend/`. Apply the database schema and start the
+services in separate shells:
+
+```powershell
+# backend/
+python -m alembic upgrade heads
+python -m uvicorn src.main:app --host $env:DRIVE_WISE_API_HOST --port $env:DRIVE_WISE_API_PORT --env-file .env
+
+# frontend/
+npm run dev -- --hostname $env:DRIVE_WISE_FRONTEND_HOST --port $env:DRIVE_WISE_FRONTEND_PORT
 ```
 
-`frontend/` is the home for presentation, user interaction, and client-side coordination. `backend/` is the home for authoritative business rules, protected data operations, and authorization. See [frontend guidance](frontend/README.md) and [backend guidance](backend/README.md) for the detailed ownership boundary and established stack.
-
-## Frontend and Backend Boundary
-
-The frontend baseline is React, TypeScript, Redux, and Material UI (MUI); the backend language is Python. Redux is the single owner of shared client state. The backend remains authoritative for business rules and protected operations. Any future frontend/backend operation must use an explicit API contract that defines request, response, and error shapes. This skeleton defines no endpoints, API protocol, authentication flow, database, or service integration.
-
-## Local Development
-
-The backend setup is approved and documented in [backend guidance](backend/README.md):
-create a Python 3.11-3.13 virtual environment, install
-`backend/requirements-dev.txt`, run the documented checks, and start the local
-health-check service. Frontend startup remains pending explicit approval of its
-execution and tooling choices. Do not infer a framework, package manager, or
-service from the legacy application description. The required check is a
-clean-checkout start of each area using only its documented prerequisites.
-
-## Scope
-
-This skeleton does not implement trip planning, vehicle management, route or stop recommendations, maps, saved routes or history, AI Concierge, profiles, administrator or manufacturer dashboards, authentication flows, or external service integrations.
+See [backend setup](backend/README.md), [frontend setup](frontend/README.md),
+and the [Feature 007 quickstart](specs/007-trip-planning-dashboard/quickstart.md)
+for configuration names, verification commands, and live integration scenarios.

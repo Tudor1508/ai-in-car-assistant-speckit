@@ -44,6 +44,10 @@ export async function loginAccount(payload: {
   email: string;
   password: string;
 }): Promise<LoginResult> {
+  // A stale in-memory token can outlive or become detached from the anonymous
+  // cookie context (for example after another tab bootstraps CSRF). Start login
+  // with a fresh token bound to the cookie currently held by this browser.
+  setCsrfToken(null);
   const result = await authRequest(apiRequest<LoginResult>("/auth/login", "POST", payload));
   setCsrfToken(result.csrf_token);
   return result;

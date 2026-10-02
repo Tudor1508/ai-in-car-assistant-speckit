@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import "leaflet/dist/leaflet.css";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v16-appRouter";
 import { Providers } from "./providers";
 

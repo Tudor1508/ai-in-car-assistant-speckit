@@ -1,13 +1,17 @@
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+BACKEND_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BACKEND_DIR / ".env")
 
 
 def get_allowed_origins() -> list[str]:
     configured = os.environ.get("DRIVE_WISE_ALLOWED_ORIGINS")
-    origins = (
-        [origin.strip() for origin in configured.split(",") if origin.strip()]
-        if configured
-        else ["http://localhost:3000"]
-    )
+    if not configured:
+        raise ValueError("DRIVE_WISE_ALLOWED_ORIGINS must be configured")
+    origins = [origin.strip() for origin in configured.split(",") if origin.strip()]
     if not origins or "*" in origins:
         raise ValueError("Credentialed CORS requires explicit allowed origins")
     return origins
