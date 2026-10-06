@@ -95,49 +95,49 @@ export function TripPlanningDashboard() {
   return (
     checkingAccess ? (
       <Box component="main" role="status" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "#081523", color: "white", display: "grid", placeItems: "center" }}>
-        <CircularProgress aria-label="Se verifică sesiunea" />
+        <CircularProgress aria-label="Checking your session" />
       </Box>
     ) :
     <Box component="main" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "#081523", color: "white", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
       <Box sx={{ maxWidth: 1240, mx: "auto" }}>
         <Box sx={{ mb: 3 }}>
-          <Typography variant="overline" sx={{ color: "#58dced", letterSpacing: 2 }}>PLANIFICARE CĂLĂTORIE</Typography>
+          <Typography variant="overline" sx={{ color: "#58dced", letterSpacing: 2 }}>TRIP PLANNER</Typography>
           <Typography variant="h3" sx={{ fontWeight: 850, fontSize: { xs: "2.1rem", sm: "3.2rem" } }}>Plan a trip<span style={{ color: "#58dced" }}>.</span></Typography>
-          <Typography color="grey.400" sx={{ mt: 0.5 }}>Alege destinația și verifică traseul în funcție de autonomia mașinii tale.</Typography>
+          <Typography color="grey.400" sx={{ mt: 0.5 }}>Choose a destination and check the route against your vehicle's range.</Typography>
         </Box>
 
-        {vehicleLoadMessage && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void loadVehicles()}>Reîncearcă</Button>} sx={{ mb: 2 }}>{vehicleLoadMessage}</Alert>}
-        {!vehicleLoadMessage && vehicles.status === "loading" && vehicles.items.length === 0 && <Typography role="status">Se încarcă vehiculele…</Typography>}
+        {vehicleLoadMessage && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void loadVehicles()}>Retry</Button>} sx={{ mb: 2 }}>{vehicleLoadMessage}</Alert>}
+        {!vehicleLoadMessage && vehicles.status === "loading" && vehicles.items.length === 0 && <Typography role="status">Loading vehicles…</Typography>}
         {vehicles.status !== "loading" && (
           <>
             {vehicles.items.length === 0 && (
               <Alert severity="info" sx={{ mb: 2 }} action={<Button color="inherit" href="/vehicles">My vehicles</Button>}>
-                Adaugă un vehicul în My vehicles pentru a putea previzualiza un traseu. Poți salva locațiile favorite și acum.
+                Add a vehicle in My vehicles to preview a route. You can still save favorite locations now.
               </Alert>
             )}
             <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4, mb: 2.5 }}>
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-                  <PlaceAutocomplete label="Punct de plecare" value={originText} selected={trip.origin} onChange={setOriginText} onSelect={(place) => dispatch(originSelected(place))} allowCurrentLocation />
-                  <PlaceAutocomplete label="Destinație" value={destinationText} selected={trip.destination} onChange={setDestinationText} onSelect={(place) => dispatch(destinationSelected(place))} />
+                  <PlaceAutocomplete label="Starting point" value={originText} selected={trip.origin} onChange={setOriginText} onSelect={(place) => dispatch(originSelected(place))} allowCurrentLocation />
+                  <PlaceAutocomplete label="Destination" value={destinationText} selected={trip.destination} onChange={setDestinationText} onSelect={(place) => dispatch(destinationSelected(place))} />
                 </Box>
                 <FavoriteRoutes canSave={trip.origin?.label === originText && trip.destination?.label === destinationText} />
                 {vehicles.items.length > 0 && (
                   <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr auto" }, gap: 2, alignItems: "end" }}>
                     <VehicleRangeControl />
                     <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null || trip.status === "loading"} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>
-                      {trip.status === "loading" ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}Previzualizează traseul
+                      {trip.status === "loading" ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}Preview route
                     </Button>
                   </Box>
                 )}
               </CardContent>
             </Card>
-            {trip.error && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || trip.currentLevelPercent === null}>Reîncearcă</Button>} sx={{ mb: 2 }}>{trip.error}</Alert>}
+            {trip.error && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || trip.currentLevelPercent === null}>Retry</Button>} sx={{ mb: 2 }}>{trip.error}</Alert>}
             {trip.preview && trip.origin && trip.destination && (
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.3fr) minmax(320px, .7fr)" }, gap: 2 }}>
                 <RouteMap preview={trip.preview} origin={trip.origin} destination={trip.destination} />
                 <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4 }}>
-                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={trip.preview} /></Stack></CardContent>
+                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Route details</Typography><RouteSummary preview={trip.preview} /></Stack></CardContent>
                 </Card>
               </Box>
             )}

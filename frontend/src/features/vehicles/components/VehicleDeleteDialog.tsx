@@ -22,7 +22,7 @@ export function VehicleDeleteDialog({ vehicle, onClose, onConfirm }: Props) {
       await onConfirm(vehicle);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Nu am putut șterge vehiculul. Încearcă din nou.");
+      setError(cause instanceof Error ? cause.message : "The vehicle could not be deleted. Please try again.");
     } finally {
       setPending(false);
     }
@@ -30,14 +30,14 @@ export function VehicleDeleteDialog({ vehicle, onClose, onConfirm }: Props) {
 
   return (
     <Dialog open={!!vehicle} onClose={pending ? undefined : onClose} aria-labelledby="delete-vehicle-title" aria-describedby="delete-vehicle-description">
-      <DialogTitle id="delete-vehicle-title">Ștergi vehiculul?</DialogTitle>
+      <DialogTitle id="delete-vehicle-title">Delete this vehicle?</DialogTitle>
       <DialogContent>
         {error && <Alert severity="error" role="alert" sx={{ mb: 2 }}>{error}</Alert>}
-        <span id="delete-vehicle-description">Vehiculul {vehicle?.name} {vehicle?.model} va fi eliminat din garaj.</span>
+        <span id="delete-vehicle-description">{vehicle?.name} {vehicle?.model} will be removed from your garage.</span>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} disabled={pending}>Anulează</Button>
-        <Button onClick={confirm} color="error" variant="contained" disabled={pending}>{pending ? "Se șterge…" : "Șterge"}</Button>
+        <Button onClick={onClose} disabled={pending}>Cancel</Button>
+        <Button onClick={confirm} color="error" variant="contained" disabled={pending}>{pending ? "Deleting…" : "Delete"}</Button>
       </DialogActions>
     </Dialog>
   );
