@@ -42,7 +42,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
       const validation = passwordFormError(
         String(values.new_password ?? ""),
         String(values.new_password_confirmation ?? ""),
-        "Parola nouă",
+        "New password",
       );
       if (validation) {
         setError(validation);
@@ -59,19 +59,19 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
       }
       onDone();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Operația nu a reușit.");
+      setError(cause instanceof Error ? cause.message : "The operation failed.");
     }
   }
 
   return (
     <>
       <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-        <Button onClick={() => { setError(""); setAction("password"); }}>Schimbă parola</Button>
-        <Button color="error" onClick={() => { setError(""); setAction("deactivate"); }}>Dezactivează contul</Button>
+        <Button onClick={() => { setError(""); setAction("password"); }}>Change password</Button>
+        <Button color="error" onClick={() => { setError(""); setAction("deactivate"); }}>Deactivate account</Button>
       </Stack>
       <Dialog open={action !== null} onClose={close} fullWidth aria-labelledby="account-security-title">
         <DialogTitle id="account-security-title">
-          {action === "password" ? "Schimbă parola" : "Dezactivează contul"}
+          {action === "password" ? "Change password" : "Deactivate account"}
         </DialogTitle>
         <form key={action ?? "closed"} onSubmit={submit}>
           <DialogContent>
@@ -79,7 +79,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
               {error && <Alert severity="error" role="alert" aria-live="assertive">{error}</Alert>}
               <TextField
                 name="current_password"
-                label="Parola curentă"
+                label="Current password"
                 type="password"
                 autoComplete="current-password"
                 required
@@ -88,15 +88,15 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
                 <>
                   <TextField
                     name="new_password"
-                    label="Parolă nouă"
+                    label="New password"
                     type="password"
                     autoComplete="new-password"
                     required
-                    helperText="Minimum 8 caractere, o literă mare, o cifră și un caracter special."
+                    helperText="At least 8 characters, an uppercase letter, a number, and a special character."
                   />
                   <TextField
                     name="new_password_confirmation"
-                    label="Confirmă parola nouă"
+                    label="Confirm new password"
                     type="password"
                     autoComplete="new-password"
                     required
@@ -105,15 +105,15 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
               ) : (
                 <TextField
                   name="confirmation"
-                  label="Scrie DELETE pentru confirmare"
+                  label="Type DELETE to confirm"
                   required
                 />
               )}
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={close}>Anulează</Button>
-            <Button type="submit" color="error">Confirmă</Button>
+            <Button onClick={close}>Cancel</Button>
+            <Button type="submit" color="error">Confirm</Button>
           </DialogActions>
         </form>
       </Dialog>

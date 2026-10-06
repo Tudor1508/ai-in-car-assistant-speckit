@@ -48,8 +48,8 @@ export function ProfilePage() {
 
   if (loading || !profile) {
     return (
-      <AuthCard title="Profil">
-        <Typography role="status">Se încarcă profilul…</Typography>
+      <AuthCard title="Profile">
+        <Typography role="status">Loading profile…</Typography>
       </AuthCard>
     );
   }
@@ -58,7 +58,7 @@ export function ProfilePage() {
     <Box sx={{ minHeight: "100vh", bgcolor: "#081523", p: { xs: 2, sm: 5 } }}>
       <Box sx={{ maxWidth: 760, mx: "auto" }}>
         <Stack spacing={3} sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: "#102235", color: "white", borderRadius: 3 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>Profilul meu</Typography>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>My profile</Typography>
           {error && <Alert severity="error" role="alert">{error}</Alert>}
           <ProfileEditor
             profile={profile}

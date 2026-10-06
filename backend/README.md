@@ -28,8 +28,18 @@ the backend uses its ignored local database file.
 
 ```powershell
 python -m alembic upgrade heads
+python scripts/create_admin.py
 python -m uvicorn src.main:app --host $env:DRIVE_WISE_API_HOST --port $env:DRIVE_WISE_API_PORT --env-file .env
 ```
+
+`create_admin.py` prompts for a name, email, and password (the password is not
+echoed) and uses the configured local SQLite database. Run migrations first.
+The database permits one administrator; a second provisioning attempt exits
+without changing account data. Keep the database URL pointed at the intended
+local store and never put credentials in shell history or documentation.
+Public registration continues to create ordinary users. Administrators create
+producers from the dashboard with a name, free-text brand, email, and password;
+producers sign in through the existing email/password flow.
 
 `GET /health` retains its `{ "status": "ok" }` response. Authenticated trip
 operations are mounted under `/trips`; preview and favorite creation require

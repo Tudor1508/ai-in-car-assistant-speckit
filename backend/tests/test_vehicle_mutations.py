@@ -101,7 +101,7 @@ def test_every_account_role_can_mutate_own_vehicles_only(auth_client, session_fa
     other_id = "8" * 32
     with session_factory() as db:
         db.add_all([
-            Account(id=owner_id, name="Role owner", email=f"{role}@mutations.example", email_normalized=f"{role}@mutations.example", password_hash=hash_password("ExamplePass1!"), role=role, status="active"),
+            Account(id=owner_id, name="Role owner", email=f"{role}@mutations.example", email_normalized=f"{role}@mutations.example", password_hash=hash_password("ExamplePass1!"), role=role, status="active", admin_slot="primary" if role == "admin" else None),
             Account(id=other_id, name="Other", email="other@mutations.example", email_normalized="other@mutations.example", password_hash="unused", role="user", status="active"),
             Vehicle(id="b" * 32, owner_account_id=other_id, name="Other car", model="Other model", type="electric", year=2023, range_km=350, mileage_km=120, fuel_type=None),
         ])

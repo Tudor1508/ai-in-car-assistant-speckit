@@ -16,11 +16,11 @@ export function SignOutButton({ onError }: { onError: (message: string) => void 
     try {
       await logoutAccount();
       dispatch(authCleared());
-      router.replace("/login");
+      router.replace("/");
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "Deconectarea nu a reușit.");
+      onError(cause instanceof Error ? cause.message : "Sign out failed.");
     }
   }
 
-  return <Button onClick={signOut}>Deconectare</Button>;
+  return <Button onClick={signOut}>Sign out</Button>;
 }

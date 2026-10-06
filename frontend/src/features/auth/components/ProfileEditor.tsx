@@ -29,10 +29,10 @@ export function ProfileEditor({ profile, onUpdated }: ProfileEditorProps) {
     try {
       const updated = await updateCurrentAccount(values as ProfileUpdate);
       onUpdated(updated);
-      setNotice("Profilul a fost actualizat.");
+      setNotice("Your profile has been updated.");
       setRevision((value) => value + 1);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Actualizarea nu a reușit.");
+      setError(cause instanceof Error ? cause.message : "The update failed.");
     }
   }
 
@@ -40,24 +40,24 @@ export function ProfileEditor({ profile, onUpdated }: ProfileEditorProps) {
     <Stack component="form" key={revision} onSubmit={save} spacing={2}>
       {notice && <Alert severity="success">{notice}</Alert>}
       {error && <Alert severity="error" role="alert">{error}</Alert>}
-      <TextField name="name" label="Nume complet" defaultValue={profile.name} required />
+      <TextField name="name" label="Full name" defaultValue={profile.name} required />
       <TextField
         name="email"
         label="Email"
         type="email"
         defaultValue={profile.email}
         required
-        helperText="Neverificat"
+        helperText="Unverified"
       />
-      <Alert severity="info" role="status">Adresa de email este neverificată.</Alert>
-      <TextField label="Rol" value={profile.role} slotProps={{ input: { readOnly: true } }} />
+      <Alert severity="info" role="status">Your email address is unverified.</Alert>
+      <TextField label="Role" value={profile.role} slotProps={{ input: { readOnly: true } }} />
       <TextField
         name="current_password"
-        label="Parola curentă (necesară pentru schimbarea emailului)"
+        label="Current password (required to change your email)"
         type="password"
         autoComplete="current-password"
       />
-      <Button type="submit" variant="contained">Salvează profilul</Button>
+      <Button type="submit" variant="contained">Save profile</Button>
     </Stack>
   );
 }
