@@ -77,6 +77,7 @@ def test_tourist_normalization_preserves_optional_source_fields_and_route_order(
         "features": [
             {"properties": {"category_ids": [{"id": 627}]}, "geometry": {"coordinates": [0.08, 0]}},
             {"id": "earlier", "properties": {"name": "Early viewpoint", "category": {"id": 622}}, "geometry": {"coordinates": [0.02, 0]}},
+            {"id": "too-far", "properties": {"name": "Far viewpoint", "category": {"id": 622}}, "geometry": {"coordinates": [0.05, 0.2]}},
         ]
     })
 
@@ -87,6 +88,20 @@ def test_tourist_normalization_preserves_optional_source_fields_and_route_order(
     assert attractions[1]["name"] is None
     assert attractions[0]["route_progress_m"] < attractions[1]["route_progress_m"]
     assert all("detour" not in item for item in attractions)
+
+
+def test_geoapify_recommendations_more_than_10km_from_route_are_filtered(monkeypatch) -> None:
+    settings = TripSettings("test-key", "https://example.invalid", 1, 3, 1_000, 10, (593, 594), 596, (622, 627), 5)
+    provider = ORSProvider(settings)
+    geometry = RouteGeometry(type="LineString", coordinates=[(0, 0), (1, 0)])
+    monkeypatch.setattr(provider, "_geoapify_route_features", lambda *_args, **_kwargs: [
+        {"id": "near", "properties": {"name": "Near", "categories": ["catering.restaurant"]}, "geometry": {"coordinates": [0.5, 0.05]}},
+        {"id": "far", "properties": {"name": "Far", "categories": ["catering.restaurant"]}, "geometry": {"coordinates": [0.5, 0.2]}},
+    ])
+
+    restaurants = provider._geoapify_places_near_route(geometry, ["catering.restaurant"], "restaurant")
+
+    assert [restaurant["source_id"] for restaurant in restaurants] == ["near"]
 
 
 def test_tourist_normalization_returns_empty_list_when_source_has_no_attractions(monkeypatch) -> None:

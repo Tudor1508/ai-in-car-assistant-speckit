@@ -30,6 +30,7 @@ All trip data shared by the planner, map, option selector, and summary belongs i
 - Show attractions in a dedicated list separate from fuel/charging stops. List order follows route progress from origin to destination. Display only source-provided name, category, and location; omit absent optional detail. Do not invent descriptions, ratings, opening hours, availability, or visit status.
 - Show route-relative progress as distance along the selected route from its origin when available. Explain that attractions are recommendations beside/along the route and are not mandatory waypoints or detours. Do not state that the user must stop at them or has visited them.
 - Keep the Scenic attraction list concise: show at most one attraction per 100 km section of route, skip the first 10 km, and leave at least 10 km between recommendations and mandatory energy stops or other attractions.
+- Show tourist attractions and restaurants only when their source coordinates are within 10 km of the selected route line.
 - Switching Scenic candidate options updates geometry, metrics, feasibility, energy stops, attraction markers, and attraction order together. The map and both lists must never combine different option results.
 
 ## States and recovery
