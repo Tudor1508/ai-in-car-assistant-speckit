@@ -20,6 +20,10 @@ frontend/test-results/
 frontend/playwright-report/
 /frontend/.pw-browsers/
 **/.pytest_cache/
+**/.pytest-tmp*/
+**/.pytest-converge-tmp*/
+/pytest-cache-files-*/
+/backend/test-results/
 
 # Universal
 .DS_Store
