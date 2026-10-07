@@ -186,6 +186,20 @@ def save_favorite_route(
     return _favorite_response(row), True
 
 
+def delete_owned_favorite_route(db: Session, owner_id: str, favorite_id: str) -> None:
+    favorite = db.scalar(
+        select(TripFavorite).where(
+            TripFavorite.id == favorite_id,
+            TripFavorite.owner_account_id == owner_id,
+        )
+    )
+    if favorite is None:
+        # Keep foreign and nonexistent IDs indistinguishable to the caller.
+        raise HTTPException(status_code=404, detail="not_found")
+    db.delete(favorite)
+    db.flush()
+
+
 def search_places(provider: ORSProvider, query: str, settings: TripSettings) -> PlaceCollection:
     if len(query.strip()) < settings.geocode_min_chars:
         raise HTTPException(status_code=422, detail="validation_error")

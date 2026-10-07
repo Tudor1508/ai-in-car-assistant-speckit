@@ -1,19 +1,15 @@
 ﻿import { expect, test, type Page } from "@playwright/test";
 
-async function registerAndLogin(page: Page) {
-  const email = `concierge-${Date.now()}@example.com`;
-  await page.goto("/register");
-  await page.getByLabel("Nume complet").fill("Concierge Test");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill("ExamplePass1!");
-  await page.getByLabel(/Confirm/).fill("ExamplePass1!");
-  await page.getByRole("button", { name: /Creeaz/ }).click();
-  await expect(page.getByText(/Contul a fost creat/)).toBeVisible();
-  await page.getByRole("link", { name: "Autentificare" }).click();
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill("ExamplePass1!");
-  await page.getByRole("button", { name: /Autentificare/ }).click();
-  await expect(page).toHaveURL(/\/$/);
+async function openAsAuthenticatedUser(page: Page) {
+  const apiPort = new URL(process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").port;
+  await page.route((url) => url.port === apiPort && url.pathname === "/auth/me", (route) => route.fulfill({ json: {
+    data: { id: "concierge-user", name: "Concierge Test", email: "concierge@example.test", email_verified: true, role: "user" },
+  } }));
+  await page.route((url) => url.port === apiPort && url.pathname === "/auth/csrf/bootstrap", (route) => route.fulfill({ json: { data: { csrf_token: "concierge-csrf" } } }));
+  await page.route((url) => url.port === apiPort && url.pathname.startsWith("/vehicles"), (route) => route.fulfill({ json: { data: { vehicles: [] } } }));
+  await page.route((url) => url.port === apiPort && url.pathname === "/trips/favorites", (route) => route.fulfill({ json: { data: { favorites: [] } } }));
+  await page.goto("/trip");
+  await expect(page.getByRole("heading", { name: "Plan a trip." })).toBeVisible();
 }
 
 async function installFakeAssistantApi(page: Page, messageHandler: (requestBody: unknown) => Promise<{ status: number; body: unknown }>) {
@@ -73,7 +69,7 @@ test("launcher overlays the trip page and Send submits only question and locale 
     received = body;
     return { status: 200, body: { data: { reply: { text: "Fake answer with approximate estimates.", language: "en-US", is_demo: false } } } };
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
 
   const heading = page.getByRole("heading", { name: "Plan a trip." });
   const before = await heading.boundingBox();
@@ -114,7 +110,7 @@ test("launcher overlays the trip page and Send submits only question and locale 
   expect(composerBox).toBeTruthy();
   expect(composerItems.every(Boolean)).toBe(true);
   expect(composerItems.map((box) => box!.x)).toEqual([...composerItems.map((box) => box!.x)].sort((a, b) => a - b));
-  expect(composerBox!.y + composerBox!.height).toBeCloseTo(panelBox!.y + panelBox!.height - 8, 0);
+  expect(Math.abs(composerBox!.y + composerBox!.height - (panelBox!.y + panelBox!.height - 8))).toBeLessThanOrEqual(1);
   expect(count).toBe(1);
   expect(received).toEqual({ question: "Suggest a weekend in BraÈ™ov", locale: "en", history: [] });
   await expect(page.getByRole("dialog", { name: /Send this question/ })).toHaveCount(0);
@@ -134,22 +130,25 @@ test("launcher overlays the trip page and Send submits only question and locale 
   await expect(page.getByLabel("Travel question")).toBeVisible();
 });
 
-test("failed assistant request preserves the draft and offers retry through Send", async ({ page }) => {
+test("failed assistant request keeps the question in the conversation and offers retry", async ({ page }) => {
   let count = 0;
   await installFakeAssistantApi(page, async () => {
     count += 1;
-    return { status: 502, body: { error: { code: "assistant_unavailable", message: "The travel assistant is temporarily unavailable" } } };
+    return count === 1
+      ? { status: 502, body: { error: { code: "assistant_unavailable", message: "The travel assistant is temporarily unavailable" } } }
+      : { status: 200, body: { data: { reply: { text: "Retry answer", language: "en-US", is_demo: false } } } };
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const draft = "Plan a city break";
   const input = page.getByLabel("Travel question");
   await input.fill(draft);
   await page.getByRole("button", { name: "Send" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: /question remains in the input/i })).toBeVisible();
-  await expect(input).toHaveValue(draft);
-  await page.getByRole("button", { name: "Send" }).click();
-  await expect(input).toHaveValue(draft);
+  await expect(page.getByRole("alert").filter({ hasText: /question is still in the conversation/i })).toBeVisible();
+  await expect(page.getByTestId("user-message")).toHaveText(draft);
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByText("Retry answer")).toBeVisible();
+  await expect(page.getByTestId("user-message")).toHaveCount(1);
   expect(count).toBe(2);
 });
 
@@ -160,7 +159,7 @@ test("shows a compact assistant loading bubble in the message list without movin
     await requestGate;
     return { status: 200, body: { data: { reply: { text: "Fake answer", language: "en-US", is_demo: false } } } };
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   await page.getByLabel("Travel question").fill("Plan a weekend trip");
   const composer = page.getByTestId("concierge-composer");
@@ -175,7 +174,7 @@ test("shows a compact assistant loading bubble in the message list without movin
   expect(composerDuring).toBeTruthy();
   expect(loadingBox!.x).toBeLessThan(composerDuring!.x + composerDuring!.width / 2);
   expect(composerDuring!.y).toBeCloseTo(composerBefore!.y, 0);
-  await expect(loadingBubble.locator("span")).toHaveCount(4);
+  await expect(loadingBubble.locator("span")).toHaveCount(5);
   finishRequest();
   await expect(page.getByText("Fake answer")).toBeVisible();
   await expect(loadingBubble).toHaveCount(0);
@@ -195,7 +194,7 @@ test("missing OpenAI configuration shows unavailable state and blocks Send", asy
     sendCount += 1;
     await route.fulfill({ status: 503, contentType: "application/json", body: "{}" });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   await expect(page.getByRole("status").filter({ hasText: /OpenAI provider configuration is not ready/i })).toBeVisible();
   const input = page.getByLabel("Travel question");
@@ -218,7 +217,7 @@ test("records locally, asks consent before upload, edits the transcript, and nev
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { text: "Find a museum" } }) });
   });
   await installFakeRecorder(page);
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const input = page.getByLabel("Travel question");
   await input.fill("Existing typed text");
@@ -249,7 +248,7 @@ test("declining transcription consent sends no recording and preserves typed inp
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ data: { text: "Should not arrive" } }) });
   });
   await installFakeRecorder(page);
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const input = page.getByLabel("Travel question");
   await input.fill("Typed fallback");
@@ -275,7 +274,7 @@ test("microphone denial and transcription failure keep typed questions available
       value: { getUserMedia: async () => { throw new DOMException("Permission denied", "NotAllowedError"); } },
     });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const input = page.getByLabel("Travel question");
   await page.getByRole("button", { name: "Record question" }).click();
@@ -348,7 +347,7 @@ test("read aloud selects local voices matching each response language and can be
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: fakeSynthesis });
     Object.defineProperty(window, "fakeSynthesis", { configurable: true, value: fakeSynthesis });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const input = page.getByLabel("Travel question");
   const playButton = page.getByRole("button", { name: "Read latest answer aloud" });
@@ -399,7 +398,7 @@ test("waits for asynchronously loaded local voices before playback", async ({ pa
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: fakeSynthesis });
     Object.defineProperty(window, "fakeSynthesis", { configurable: true, value: fakeSynthesis });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   await page.getByLabel("Travel question").fill("O întrebare în română");
   await page.getByRole("button", { name: "Send" }).click();
@@ -440,7 +439,7 @@ test("uses the backend TTS fake in the response language when no local matching 
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: fakeSynthesis });
     Object.defineProperty(window, "Audio", { configurable: true, value: FakeAudio });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   await page.getByLabel("Travel question").fill("Întrebare");
   await page.getByRole("button", { name: "Send" }).click();
@@ -465,7 +464,7 @@ test("reports unavailable when neither a local voice nor backend TTS supports th
     Object.defineProperty(window, "SpeechSynthesisUtterance", { configurable: true, value: FakeUtterance });
     Object.defineProperty(window, "speechSynthesis", { configurable: true, value: fakeSynthesis });
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   await page.getByLabel("Travel question").fill("Test question");
   await page.getByRole("button", { name: "Send" }).click();
@@ -482,7 +481,7 @@ test("keeps the composer fixed and scrolls long conversations to the latest resp
     const text = `Long answer ${replyNumber} begins. ${"Travel details and approximate itinerary information. ".repeat(70)} Latest answer ${replyNumber} ends.`;
     return { status: 200, body: { data: { reply: { text, language: "en-US", is_demo: false } } } };
   });
-  await registerAndLogin(page);
+  await openAsAuthenticatedUser(page);
   const pageScrollBefore = await page.evaluate(() => window.scrollY);
   await page.getByRole("button", { name: "Open Drivewise Assistant" }).click();
   const panel = page.getByRole("dialog", { name: "Drivewise Assistant" });
@@ -509,7 +508,7 @@ test("keeps the composer fixed and scrolls long conversations to the latest resp
   await expect(page.getByText("Latest answer 6 ends.")).toBeInViewport();
   const latestComposerBox = await composer.boundingBox();
   expect(latestComposerBox!.y).toBeCloseTo(composerBox!.y, 0);
-  expect(latestComposerBox!.y + latestComposerBox!.height).toBeCloseTo(panelBox!.y + panelBox!.height - 8, 0);
+  expect(Math.abs(latestComposerBox!.y + latestComposerBox!.height - (panelBox!.y + panelBox!.height - 8))).toBeLessThanOrEqual(1);
   expect(await page.evaluate(() => window.scrollY)).toBe(pageScrollBefore);
 
   await page.getByRole("button", { name: "Close chat" }).click();

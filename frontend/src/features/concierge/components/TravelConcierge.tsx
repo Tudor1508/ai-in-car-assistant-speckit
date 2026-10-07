@@ -313,28 +313,28 @@ export function TravelConcierge() {
   }
 
   return <>
-    {!open && <IconButton aria-label="Open Drivewise Assistant" onClick={() => setOpen(true)} sx={{ position: "fixed", zIndex: 1300, right: 24, bottom: 24, width: 60, height: 60, color: "#071827", bgcolor: "#58dced", boxShadow: 6, "&:hover": { bgcolor: "#77e8f4" } }}>✦</IconButton>}
-    {open && <Paper role="dialog" aria-label="Drivewise Assistant" elevation={16} sx={{ position: "fixed", zIndex: 1300, right: { xs: 8, sm: 24 }, bottom: { xs: 8, sm: 24 }, width: { xs: "calc(100vw - 16px)", sm: 304 }, height: { xs: "min(78dvh, 560px)", sm: 416 }, maxHeight: "calc(100dvh - 16px)", display: "flex", flexDirection: "column", bgcolor: "#0d1b2a", color: "white", border: "1px solid #4ca8b7", borderRadius: 3, overflow: "hidden" }}>
-      <Stack direction="row" sx={{ px: 2, py: 1, minHeight: 48, borderBottom: "1px solid #25394b", alignItems: "center", justifyContent: "space-between" }}>
+    {!open && <IconButton aria-label="Open Drivewise Assistant" onClick={() => setOpen(true)} sx={{ position: "fixed", zIndex: 1300, right: 24, bottom: 24, width: 60, height: 60, color: "primary.contrastText", bgcolor: "primary.main", boxShadow: 6, "&:hover": { bgcolor: "primary.dark" } }}>✦</IconButton>}
+    {open && <Paper role="dialog" aria-label="Drivewise Assistant" elevation={16} sx={{ position: "fixed", zIndex: 1300, right: { xs: 8, sm: 24 }, bottom: { xs: 8, sm: 24 }, width: { xs: "calc(100vw - 16px)", sm: 304 }, height: { xs: "min(78dvh, 560px)", sm: 416 }, maxHeight: "calc(100dvh - 16px)", display: "flex", flexDirection: "column", bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "primary.main", borderRadius: 3, overflow: "hidden" }}>
+      <Stack direction="row" sx={{ px: 2, py: 1, minHeight: 48, borderBottom: "1px solid", borderColor: "divider", alignItems: "center", justifyContent: "space-between" }}>
         <Typography sx={{ fontWeight: 800 }}>Drivewise Assistant</Typography>
-        <IconButton aria-label="Close chat" onClick={closeChat} sx={{ color: "white", p: 0.5 }}>×</IconButton>
+        <IconButton aria-label="Close chat" onClick={closeChat} sx={{ color: "text.primary", p: 0.5 }}>×</IconButton>
       </Stack>
       <Box ref={messagesViewportRef} data-testid="concierge-messages" aria-live="polite" sx={{ flex: 1, minHeight: 0, overflowY: "auto", overscrollBehavior: "contain", px: 2, py: 1 }}>
         <Box ref={messagesContentRef} sx={{ minHeight: "100%", display: "flex", flexDirection: "column" }}>
-        {statusLoading && <Typography role="status" sx={{ color: "#58dced" }}>Checking assistant availability…</Typography>}
+        {statusLoading && <Typography role="status" sx={{ color: "primary.main" }}>Checking assistant availability…</Typography>}
         {status && !status.enabled && <Alert severity="warning" role="status">The assistant is temporarily unavailable because the OpenAI provider configuration is not ready. Check the backend configuration and try again.</Alert>}
         {statusChecked && !status && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => { setStatusChecked(false); setError(""); }}>Retry</Button>}>Assistant availability could not be checked.</Alert>}
         {messages.length === 0 && <Box sx={{ flex: 1, minHeight: 0, display: "grid", placeItems: "center" }}>
-          <Box data-testid="concierge-empty-state" sx={{ px: 2.5, py: 1.5, borderRadius: "22px 22px 22px 6px", bgcolor: "#58dced", border: "1px solid #58dced", color: "#071827", boxShadow: 4, fontSize: "15px", fontWeight: 700, lineHeight: 1.35 }}>Ask me a question</Box>
+          <Box data-testid="concierge-empty-state" sx={{ px: 2.5, py: 1.5, borderRadius: "22px 22px 22px 6px", bgcolor: "primary.main", border: "1px solid", borderColor: "primary.main", color: "primary.contrastText", boxShadow: 4, fontSize: "15px", fontWeight: 700, lineHeight: 1.35 }}>Ask me a question</Box>
         </Box>}
         {messages.map((message) => <Stack key={message.id} sx={{ alignItems: message.role === "user" ? "flex-end" : "flex-start", mb: 1 }}>
-          <Box data-testid={`${message.role}-message`} sx={{ maxWidth: "88%", p: 1.1, borderRadius: message.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px", bgcolor: message.role === "user" ? "#21495b" : "#263242", border: message.role === "user" ? "1px solid #438597" : "1px solid #465263", fontSize: "0.78rem", lineHeight: 1.35, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{message.text}</Box>
+          <Box data-testid={`${message.role}-message`} sx={{ maxWidth: "88%", p: 1.1, borderRadius: message.role === "user" ? "14px 14px 3px 14px" : "14px 14px 14px 3px", bgcolor: message.role === "user" ? "action.selected" : "background.default", border: "1px solid", borderColor: "divider", fontSize: { xs: "0.875rem", sm: "0.85rem" }, lineHeight: 1.45, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{message.text}</Box>
           {message.role === "user" && message.failed && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" disabled={pending} onClick={() => void submitQuestion(message.text, message.id)}>Retry</Button>} sx={{ mt: 0.5, maxWidth: "92%" }}>The assistant could not answer. Your question is still in the conversation.</Alert>}
         </Stack>)}
         {pending && <Stack sx={{ alignItems: "flex-start", mb: 1 }}>
-          <Box data-testid="assistant-loading-bubble" role="status" aria-label="Preparing answer" sx={{ display: "flex", alignItems: "center", gap: 0.75, maxWidth: "88%", px: 1.1, py: 0.8, borderRadius: "14px 14px 14px 3px", bgcolor: "#263242", border: "1px solid #465263", color: "#b9c7d5", fontSize: "0.68rem", lineHeight: 1.3 }}>
+          <Box data-testid="assistant-loading-bubble" role="status" aria-label="Preparing answer" sx={{ display: "flex", alignItems: "center", gap: 0.75, maxWidth: "88%", px: 1.1, py: 0.8, borderRadius: "14px 14px 14px 3px", bgcolor: "background.default", border: "1px solid #465263", color: "text.secondary", fontSize: "0.75rem", lineHeight: 1.4 }}>
             <span>Preparing answer</span>
-            <Box component="span" aria-hidden="true" sx={{ display: "inline-flex", gap: "3px", "@keyframes concierge-dot-pulse": { "0%, 60%, 100%": { opacity: 0.3, transform: "translateY(0)" }, "30%": { opacity: 1, transform: "translateY(-2px)" } }, "& span": { width: 3, height: 3, borderRadius: "50%", bgcolor: "#58dced", animation: "concierge-dot-pulse 1.1s infinite ease-in-out" }, "& span:nth-of-type(2)": { animationDelay: "0.15s" }, "& span:nth-of-type(3)": { animationDelay: "0.3s" } }}>
+            <Box component="span" aria-hidden="true" sx={{ display: "inline-flex", gap: "3px", "@keyframes concierge-dot-pulse": { "0%, 60%, 100%": { opacity: 0.3, transform: "translateY(0)" }, "30%": { opacity: 1, transform: "translateY(-2px)" } }, "& span": { width: 3, height: 3, borderRadius: "50%", bgcolor: "primary.main", animation: "concierge-dot-pulse 1.1s infinite ease-in-out" }, "& span:nth-of-type(2)": { animationDelay: "0.15s" }, "& span:nth-of-type(3)": { animationDelay: "0.3s" } }}>
               <span /><span /><span />
             </Box>
           </Box>
@@ -343,24 +343,24 @@ export function TravelConcierge() {
         {recordingError && <Alert severity="warning" role="alert">{recordingError}</Alert>}
         </Box>
       </Box>
-      <Stack spacing={0.5} sx={{ flexShrink: 0, p: 1, borderTop: "1px solid #25394b" }}>
+      <Stack spacing={0.5} sx={{ flexShrink: 0, p: 1, borderTop: "1px solid", borderColor: "divider" }}>
         {recording && <Alert severity="warning" role="status" sx={{ py: 0 }}>Recording on this device… Press Stop when finished.</Alert>}
-        {transcribing && <Typography role="status" sx={{ color: "#58dced", fontSize: "0.72rem" }}>Transcribing your recording…</Typography>}
-        {recordedAudio && <Box role="group" aria-labelledby="transcription-consent-title" sx={{ p: 1, bgcolor: "#14283a", border: "1px solid #58dced", borderRadius: 1.5 }}>
-          <Typography id="transcription-consent-title" sx={{ color: "white", fontSize: "0.72rem", lineHeight: 1.4, mb: 0.75 }}>
+        {transcribing && <Typography role="status" sx={{ color: "primary.main", fontSize: "0.72rem" }}>Transcribing your recording…</Typography>}
+        {recordedAudio && <Box role="group" aria-labelledby="transcription-consent-title" sx={{ p: 1, bgcolor: "background.default", border: "1px solid", borderColor: "primary.main", borderRadius: 1.5 }}>
+          <Typography id="transcription-consent-title" sx={{ color: "text.primary", fontSize: "0.8rem", lineHeight: 1.45, mb: 0.75 }}>
             To transcribe your spoken question, this audio recording will be sent to OpenAI. The transcript will appear in the editable question field and will not be sent until you press Send. This request may incur company charges. Allow this upload? Your consent covers later recordings until you close this chat.
           </Typography>
           <Stack direction="row" spacing={1}>
-            <Button size="small" variant="contained" onClick={acceptTranscriptionConsent} sx={{ minHeight: 30, textTransform: "none" }}>Allow and transcribe</Button>
-            <Button size="small" onClick={discardRecordedAudio} sx={{ minHeight: 30, color: "#b9c7d5", textTransform: "none" }}>No, discard</Button>
+            <Button size="small" variant="contained" onClick={acceptTranscriptionConsent} sx={{ minHeight: 40, textTransform: "none" }}>Allow and transcribe</Button>
+            <Button size="small" onClick={discardRecordedAudio} sx={{ minHeight: 40, color: "text.secondary", textTransform: "none" }}>No, discard</Button>
           </Stack>
         </Box>}
-        {playbackError && <Typography role="alert" sx={{ color: "#ffcc80", fontSize: "0.72rem" }}>{playbackError}</Typography>}
+        {playbackError && <Typography role="alert" sx={{ color: "warning.main", fontSize: "0.72rem" }}>{playbackError}</Typography>}
         <Stack data-testid="concierge-composer" direction="row" spacing={0.5} sx={{ alignItems: "center", minWidth: 0 }}>
-          <TextField value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendQuestion(); } }} size="small" placeholder="Ask me a question." slotProps={{ htmlInput: { "aria-label": "Travel question" } }} sx={{ flex: 1, minWidth: 0, "& .MuiInputBase-root": { color: "white", fontSize: "0.78rem", height: 34 }, "& .MuiOutlinedInput-notchedOutline": { borderColor: "#3c4a5b" } }} />
-          <IconButton aria-label={activeSpeech ? "Stop audio" : "Read latest answer aloud"} disabled={!activeSpeech && !latestAnswer} onClick={() => activeSpeech ? stopPlayback() : latestAnswer && void play(latestAnswer)} sx={{ color: "#58dced", width: 32, height: 34, borderRadius: 1 }}>{activeSpeech ? "■" : "▶"}</IconButton>
-          <IconButton onClick={recording ? stopRecording : () => void startRecording()} disabled={transcribing || Boolean(recordedAudio)} aria-label={recording ? "Stop recording" : "Record question"} sx={{ color: "#58dced", width: 32, height: 34, borderRadius: 1 }}>{recording ? "■" : "♩"}</IconButton>
-          <Button variant="contained" size="small" disabled={!draft.trim() || pending || statusLoading || status?.enabled !== true} onClick={() => void sendQuestion()} sx={{ minWidth: 50, px: 1, height: 34, borderRadius: 2, fontSize: "0.72rem", textTransform: "none" }}>Send</Button>
+          <TextField value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); void sendQuestion(); } }} size="small" placeholder="Ask me a question." slotProps={{ htmlInput: { "aria-label": "Travel question" } }} sx={{ flex: 1, minWidth: 0, "& .MuiInputBase-root": { color: "text.primary", fontSize: "0.875rem", height: 40 }, "& .MuiOutlinedInput-notchedOutline": { borderColor: "divider" } }} />
+          <IconButton aria-label={activeSpeech ? "Stop audio" : "Read latest answer aloud"} disabled={!activeSpeech && !latestAnswer} onClick={() => activeSpeech ? stopPlayback() : latestAnswer && void play(latestAnswer)} sx={{ color: "primary.main", width: 40, height: 40, borderRadius: 1, flex: "0 0 auto" }}>{activeSpeech ? "■" : "▶"}</IconButton>
+          <IconButton onClick={recording ? stopRecording : () => void startRecording()} disabled={transcribing || Boolean(recordedAudio)} aria-label={recording ? "Stop recording" : "Record question"} sx={{ color: "primary.main", width: 40, height: 40, borderRadius: 1, flex: "0 0 auto" }}>{recording ? "■" : "♩"}</IconButton>
+          <Button variant="contained" size="small" disabled={!draft.trim() || pending || statusLoading || status?.enabled !== true} onClick={() => void sendQuestion()} sx={{ minWidth: 56, px: 1, height: 40, borderRadius: 2, fontSize: "0.8rem", textTransform: "none" }}>Send</Button>
         </Stack>
       </Stack>
     </Paper>}

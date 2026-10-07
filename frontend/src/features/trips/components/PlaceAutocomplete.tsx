@@ -12,12 +12,13 @@ type Props = {
   onChange: (value: string) => void;
   onSelect: (place: PlaceSelection | null) => void;
   allowCurrentLocation?: boolean;
+  disabled?: boolean;
 };
 
 const configuredMinChars = Number(process.env.NEXT_PUBLIC_PLACE_MIN_CHARS);
 const configuredDebounceMs = Number(process.env.NEXT_PUBLIC_PLACE_DEBOUNCE_MS);
 
-export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, allowCurrentLocation = false }: Props) {
+export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, allowCurrentLocation = false, disabled = false }: Props) {
   const [suggestions, setSuggestions] = useState<PlaceSelection[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -83,6 +84,7 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
         isOptionEqualToValue={(option, current) => typeof current !== "string" && option.latitude === current.latitude && option.longitude === current.longitude}
         filterOptions={(options) => options}
         loading={loading}
+        disabled={disabled}
         noOptionsText={query.length < configuredMinChars ? "Enter more characters" : "No suggestions found"}
         onInputChange={(_, nextValue, reason) => {
           if (reason === "input" || reason === "clear") {
@@ -116,7 +118,7 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
           />
         )}
       />
-      {allowCurrentLocation && <Button type="button" onClick={useCurrentLocation} sx={{ alignSelf: "flex-start" }}>Use current location</Button>}
+      {allowCurrentLocation && <Button type="button" onClick={useCurrentLocation} disabled={disabled} sx={{ alignSelf: "flex-start" }}>Use current location</Button>}
       {locationError && <Alert severity="warning" role="alert">{locationError}</Alert>}
       {searchError && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => setRetryVersion((current) => current + 1)}>Retry search</Button>}>{searchError}</Alert>}
       {!searchError && selected?.label !== value && query.length >= configuredMinChars && !loading && suggestions.length === 0 && (

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
@@ -17,6 +17,7 @@ import {
   tripPreviewFailed,
   tripPreviewLoaded,
   tripPreviewLoading,
+  tripPreviewCanceled,
   routeOptionSelected,
   historySaving, historySaved, historySaveFailed,
 } from "../tripsSlice";
@@ -43,6 +44,7 @@ export function TripPlanningDashboard() {
   const [originText, setOriginText] = useState("");
   const [destinationText, setDestinationText] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  const previewRequestId = useRef(0);
   const selectedVehicle = useMemo(() => vehicles.items.find((item) => item.id === trip.vehicleId), [vehicles.items, trip.vehicleId]);
   const selectedChoice = trip.preview?.route_choices?.find((choice) => choice.preference === selectedPreference && choice.status === "available");
   const selectedOption = trip.preview?.route_options?.find((option) => option.id === (selectedChoice?.route_option_id ?? trip.selectedRouteOptionId));
@@ -92,6 +94,7 @@ export function TripPlanningDashboard() {
 
   async function preview() {
     if (!trip.origin || !trip.destination || !trip.vehicleId || trip.currentLevelPercent === null) return;
+    const requestId = ++previewRequestId.current;
     dispatch(tripPreviewLoading());
     try {
       if (trip.origin.latitude === trip.destination.latitude && trip.origin.longitude === trip.destination.longitude) {
@@ -105,9 +108,11 @@ export function TripPlanningDashboard() {
         current_level_percent: trip.currentLevelPercent,
         route_preference: "all",
       });
+      if (requestId !== previewRequestId.current) return;
       setSelectedPreference("fastest");
       dispatch(tripPreviewLoaded(result));
     } catch (cause) {
+      if (requestId !== previewRequestId.current) return;
       if (cause instanceof ApiClientError && cause.code === "authentication_required") {
         setCsrfToken(null);
         dispatch(authCleared());
@@ -116,6 +121,10 @@ export function TripPlanningDashboard() {
       }
       dispatch(tripPreviewFailed(safeTripError(cause)));
     }
+  }
+  function cancelPreview() {
+    previewRequestId.current += 1;
+    dispatch(tripPreviewCanceled());
   }
   async function saveSelectedTrip() {
     if (!displayedPreview || !trip.origin || !trip.destination || !trip.vehicleId || trip.currentLevelPercent === null) return;
@@ -133,17 +142,17 @@ export function TripPlanningDashboard() {
   }
   return (
     checkingAccess ? (
-      <Box component="main" role="status" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "#081523", color: "white", display: "grid", placeItems: "center" }}>
+      <Box component="main" role="status" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "background.default", color: "text.primary", display: "grid", placeItems: "center" }}>
         <CircularProgress aria-label="Checking your session" />
       </Box>
     ) :
-    <Box component="main" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "#081523", color: "white", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
+    <Box component="main" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "background.default", color: "text.primary", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
       <TravelConcierge />
       <Box sx={{ maxWidth: 1240, mx: "auto" }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="overline" sx={{ color: "#58dced", letterSpacing: 2 }}>TRIP PLANNER</Typography>
           <Typography variant="h3" sx={{ fontWeight: 850, fontSize: { xs: "2.1rem", sm: "3.2rem" } }}>Plan a trip<span style={{ color: "#58dced" }}>.</span></Typography>
-          <Typography color="grey.400" sx={{ mt: 0.5 }}>Choose a destination and check the route against your vehicle's range.</Typography>
+          <Typography color="text.secondary" sx={{ mt: 0.5 }}>Choose a destination and check the route against your vehicle's range.</Typography>
         </Box>
 
         {vehicleLoadMessage && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void loadVehicles()}>Retry</Button>} sx={{ mb: 2 }}>{vehicleLoadMessage}</Alert>}
@@ -155,26 +164,30 @@ export function TripPlanningDashboard() {
                 Add a vehicle in My vehicles to preview a route. You can still save favorite locations now.
               </Alert>
             )}
-            <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4, mb: 2.5 }}>
+            <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4, mb: 2.5 }}>
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                 <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-                  <PlaceAutocomplete label="Starting point" value={originText} selected={trip.origin} onChange={setOriginText} onSelect={(place) => dispatch(originSelected(place))} allowCurrentLocation />
-                  <PlaceAutocomplete label="Destination" value={destinationText} selected={trip.destination} onChange={setDestinationText} onSelect={(place) => dispatch(destinationSelected(place))} />
+                  <PlaceAutocomplete label="Starting point" value={originText} selected={trip.origin} onChange={setOriginText} onSelect={(place) => dispatch(originSelected(place))} allowCurrentLocation disabled={trip.status === "loading"} />
+                  <PlaceAutocomplete label="Destination" value={destinationText} selected={trip.destination} onChange={setDestinationText} onSelect={(place) => dispatch(destinationSelected(place))} disabled={trip.status === "loading"} />
                 </Box>
-                <FavoriteRoutes canSave={trip.origin?.label === originText && trip.destination?.label === destinationText} />
+                <FavoriteRoutes canSave={trip.origin?.label === originText && trip.destination?.label === destinationText} disabled={trip.status === "loading"} />
                 {vehicles.items.length > 0 && (
                   <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr auto" }, gap: 2, alignItems: "end" }}>
-                    <VehicleRangeControl />
-                    <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null || trip.status === "loading"} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>
-                      {trip.status === "loading" ? <CircularProgress size={20} sx={{ mr: 1 }} /> : null}Generează rutele
-                    </Button>
+                    <VehicleRangeControl disabled={trip.status === "loading"} />
+                    {trip.status === "loading" ? (
+                      <Button variant="outlined" color="warning" size="large" onClick={cancelPreview} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>Stop</Button>
+                    ) : (
+                      <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>
+                        Generează rutele
+                      </Button>
+                    )}
                   </Box>
                 )}
               </CardContent>
             </Card>
             {trip.error && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || trip.currentLevelPercent === null}>Reîncearcă</Button>} sx={{ mb: 2 }}>{trip.error}</Alert>}
             {trip.preview?.route_choices && (
-              <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4, mb: 2.5 }}>
+              <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4, mb: 2.5 }}>
                 <CardContent>
                   <Typography id="generated-routes-label" variant="h5" sx={{ fontWeight: 800, mb: 1.5 }}>Rutele generate</Typography>
                   <Box role="group" aria-labelledby="generated-routes-label" sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 1.5 }}>
@@ -199,7 +212,7 @@ export function TripPlanningDashboard() {
                       })()
                     ))}
                     {unavailableChoices.map((choice) => (
-                      <Alert key={choice.preference} severity="info" role="status" sx={{ bgcolor: "#142a3d", color: "white", alignItems: "center" }}>
+                      <Alert key={choice.preference} severity="info" role="status" sx={{ bgcolor: "background.default", color: "text.primary", alignItems: "center" }}>
                         <Typography sx={{ fontWeight: 800 }}>{routeName(choice.preference)}</Typography>
                         {choice.reason === "no_attractions_found"
                           ? "Nu au fost găsite atracții pe rutele disponibile."
@@ -213,14 +226,19 @@ export function TripPlanningDashboard() {
             {displayedPreview && trip.origin && trip.destination && (
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.3fr) minmax(320px, .7fr)" }, gap: 2 }}>
                 <RouteMap preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
-                <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4 }}>
-                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={displayedPreview} />
+                <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4 }}>
+                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
                     <Button variant="contained" onClick={() => void saveSelectedTrip()} disabled={trip.historySaveStatus === "loading"}>
                       {trip.historySaveStatus === "loading" ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}Save trip
                     </Button>
                     {saveMessage && <Typography role={trip.historySaveStatus === "failed" ? "alert" : "status"}>{saveMessage}</Typography>}
                   </Stack></CardContent>
                 </Card>
+              </Box>
+            )}
+            {!displayedPreview && (
+              <Box role="region" aria-label="Trip map" sx={{ minHeight: { xs: 320, md: 460 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", display: "grid", placeItems: "center", p: 2 }}>
+                <Alert severity="info" role="status">The map preview will appear here after a route is generated. Enter a starting point and destination to begin.</Alert>
               </Box>
             )}
           </>

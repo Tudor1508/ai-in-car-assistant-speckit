@@ -69,6 +69,9 @@ type TripsState = {
   favoritesError: string | null;
   favoriteSaveStatus: "idle" | "loading" | "succeeded" | "failed";
   favoriteSaveError: string | null;
+  favoriteDeleteId: string | null;
+  favoriteDeleteStatus: "idle" | "loading" | "succeeded" | "failed";
+  favoriteDeleteError: string | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
   historyItems: TripHistoryItem[];
@@ -93,6 +96,9 @@ const initialState: TripsState = {
   favoritesError: null,
   favoriteSaveStatus: "idle",
   favoriteSaveError: null,
+  favoriteDeleteId: null,
+  favoriteDeleteStatus: "idle",
+  favoriteDeleteError: null,
   status: "idle",
   error: null,
   historyItems: [], historySummary: { total_trips: 0, total_distance_m: 0, total_duration_s: 0 },
@@ -144,6 +150,11 @@ const tripsSlice = createSlice({
       state.status = "failed";
       state.error = action.payload;
     },
+    tripPreviewCanceled(state) {
+      state.status = "idle";
+      state.error = null;
+      state.preview = null;
+    },
     favoritesLoaded(state, action: PayloadAction<FavoriteRoute[]>) {
       state.favorites = action.payload;
       state.favoritesStatus = "succeeded";
@@ -179,6 +190,22 @@ const tripsSlice = createSlice({
       state.destination = action.payload.destination;
       state.preview = null;
     },
+    favoriteDeleting(state, action: PayloadAction<string>) {
+      state.favoriteDeleteId = action.payload;
+      state.favoriteDeleteStatus = "loading";
+      state.favoriteDeleteError = null;
+    },
+    favoriteDeleted(state, action: PayloadAction<string>) {
+      state.favorites = state.favorites.filter((favorite) => favorite.id !== action.payload);
+      state.favoriteDeleteId = null;
+      state.favoriteDeleteStatus = "succeeded";
+      state.favoriteDeleteError = null;
+    },
+    favoriteDeleteFailed(state, action: PayloadAction<{ id: string; error: string }>) {
+      state.favoriteDeleteStatus = "failed";
+      state.favoriteDeleteError = action.payload.error;
+      state.favoriteDeleteId = action.payload.id;
+    },
     historyLoading(state) { state.historyStatus = "loading"; state.historyError = null; },
     historyLoaded(state, action: PayloadAction<{ trips: TripHistoryItem[]; summary: TripHistorySummary; pagination: TripHistoryPagination }>) {
       state.historyItems = action.payload.trips; state.historySummary = action.payload.summary;
@@ -205,6 +232,7 @@ export const {
   tripPreviewLoading,
   tripPreviewLoaded,
   tripPreviewFailed,
+  tripPreviewCanceled,
   favoritesLoaded,
   favoritesLoading,
   favoritesFailed,
@@ -212,6 +240,9 @@ export const {
   favoriteSaveFailed,
   favoriteSaved,
   favoriteSelected,
+  favoriteDeleting,
+  favoriteDeleted,
+  favoriteDeleteFailed,
   historyLoading, historyLoaded, historyFailed, historySortChanged, historyPageChanged,
   historySaving, historySaved, historySaveFailed,
 } = tripsSlice.actions;

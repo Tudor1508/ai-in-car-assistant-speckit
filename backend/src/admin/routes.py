@@ -80,6 +80,17 @@ def create_producer(body: UserCreateProducer, response: Response, db: Session = 
     return success_envelope({"producer": {**account_row(account), "role": "producer"}})
 
 
+@router.delete("/producers/{account_id}", response_model=SuccessEnvelope[dict], responses=common_error_responses())
+def deactivate_producer(account_id: str, body: DeactivateUserRequest, db: Session = Depends(get_db), _admin: Account = Depends(require_admin), _csrf=Depends(require_csrf)):
+    account = db.scalar(select(Account).where(Account.id == account_id, Account.role == "producer"))
+    if account is None:
+        raise HTTPException(status_code=404, detail="not_found")
+    account.status = "disabled"
+    account.updated_at = utc_now()
+    revoke_all_sessions(db, account.id)
+    return success_envelope({"status": "disabled"})
+
+
 @router.get("/vehicles", response_model=SuccessEnvelope[dict], responses=common_error_responses())
 def vehicles(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), name: str | None = None, model: str | None = None, type: Literal["combustion", "electric"] | None = None, year_from: int | None = None, year_to: int | None = None, range_km_from: int | None = None, range_km_to: int | None = None, mileage_km_from: int | None = None, mileage_km_to: int | None = None, fuel_type: Literal["petrol", "diesel", "lpg", "cng", "other"] | None = None, created_from: datetime | None = None, created_to: datetime | None = None, sort_by: Literal["name", "model", "type", "year", "range_km", "mileage_km", "fuel_type", "created_at"] = "created_at", sort_order: Literal["asc", "desc"] = "desc", db: Session = Depends(get_db), _admin: Account = Depends(require_admin)):
     query = select(Vehicle)

@@ -11,6 +11,8 @@ import {
   MenuItem,
   Stack,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import type { VehicleInput } from "../vehiclesApi";
 import type { Vehicle } from "../vehiclesSlice";
@@ -37,6 +39,8 @@ const fuelLabels: Record<NonNullable<VehicleInput["fuel_type"]>, string> = {
 };
 
 export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [values, setValues] = useState<VehicleFormValues>(() => valuesFromVehicle(vehicle));
   const [errors, setErrors] = useState<VehicleFormErrors>({});
   const [serverError, setServerError] = useState("");
@@ -70,27 +74,28 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={pending ? undefined : onClose} fullWidth maxWidth="sm" aria-labelledby="vehicle-form-title">
-      <form onSubmit={submit} noValidate>
+    <Dialog open={open} onClose={pending ? undefined : onClose} fullWidth maxWidth="sm" fullScreen={fullScreen} aria-labelledby="vehicle-form-title"
+      slotProps={{ paper: { sx: { maxHeight: { xs: "100dvh", sm: "calc(100% - 64px)" }, m: { xs: 0, sm: 4 }, width: { xs: "100%", sm: "calc(100% - 64px)" } } } }}>
+      <form onSubmit={submit} noValidate aria-busy={pending}>
         <DialogTitle id="vehicle-form-title">{vehicle ? "Edit vehicle" : "Add vehicle"}</DialogTitle>
-        <DialogContent>
+        <DialogContent dividers sx={{ overflowX: "hidden", px: { xs: 2, sm: 3 } }}>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {serverError && <Alert severity="error" role="alert">{serverError}</Alert>}
-            <TextField label="Vehicle name" value={values.name} onChange={(event) => change("name", event.target.value)} error={!!errors.name} helperText={errors.name} required autoFocus />
-            <TextField label="Model" value={values.model} onChange={(event) => change("model", event.target.value)} error={!!errors.model} helperText={errors.model} required />
+            <TextField label="Vehicle name" value={values.name} onChange={(event) => change("name", event.target.value)} error={!!errors.name} helperText={errors.name} required autoFocus disabled={pending} />
+            <TextField label="Model" value={values.model} onChange={(event) => change("model", event.target.value)} error={!!errors.model} helperText={errors.model} required disabled={pending} />
             <TextField select label="Type" value={values.type} onChange={(event) => {
               const type = event.target.value as VehicleFormValues["type"];
               setValues((current) => ({ ...current, type, fuel_type: type === "electric" ? "" : current.fuel_type || "petrol" }));
               setErrors((current) => ({ ...current, type: undefined, fuel_type: undefined }));
-            }}>
+            }} disabled={pending}>
               <MenuItem value="combustion">Combustion</MenuItem>
               <MenuItem value="electric">Electric</MenuItem>
             </TextField>
-            <TextField label="Year" type="number" value={values.year} onChange={(event) => change("year", event.target.value)} error={!!errors.year} helperText={errors.year} required slotProps={{ htmlInput: { min: 1886, max: new Date().getFullYear(), step: 1 } }} />
-            <TextField label="Range (km)" type="number" value={values.range_km} onChange={(event) => change("range_km", event.target.value)} error={!!errors.range_km} helperText={errors.range_km} required slotProps={{ htmlInput: { min: 0, step: 1 } }} />
-            <TextField label="Mileage (km)" type="number" value={values.mileage_km} onChange={(event) => change("mileage_km", event.target.value)} error={!!errors.mileage_km} helperText={errors.mileage_km} required slotProps={{ htmlInput: { min: 0, step: 1 } }} />
+            <TextField label="Year" type="number" value={values.year} onChange={(event) => change("year", event.target.value)} error={!!errors.year} helperText={errors.year} required disabled={pending} slotProps={{ htmlInput: { min: 1886, max: new Date().getFullYear(), step: 1 } }} />
+            <TextField label="Range (km)" type="number" value={values.range_km} onChange={(event) => change("range_km", event.target.value)} error={!!errors.range_km} helperText={errors.range_km} required disabled={pending} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
+            <TextField label="Mileage (km)" type="number" value={values.mileage_km} onChange={(event) => change("mileage_km", event.target.value)} error={!!errors.mileage_km} helperText={errors.mileage_km} required disabled={pending} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
             {values.type === "combustion" ? (
-              <TextField select label="Fuel type" value={values.fuel_type} onChange={(event) => change("fuel_type", event.target.value as VehicleFormValues["fuel_type"])} error={!!errors.fuel_type} helperText={errors.fuel_type} required>
+              <TextField select label="Fuel type" value={values.fuel_type} onChange={(event) => change("fuel_type", event.target.value as VehicleFormValues["fuel_type"])} error={!!errors.fuel_type} helperText={errors.fuel_type} required disabled={pending}>
                 {Object.entries(fuelLabels).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
               </TextField>
             ) : <TextField label="Fuel type" value="Not applicable" disabled />}

@@ -1,42 +1,64 @@
 import { expect, test } from "@playwright/test";
 
-test("registration creates an ordinary account with an unverified email", async ({ page }) => {
-  const email = `driver${Date.now()}@example.com`;
-  await page.setViewportSize({ width: 390, height: 844 });
+test("registration validates passwords, announces pending and success, and keeps verification copy out of the UI", async ({ page }) => {
   await page.goto("/register");
-  await expect(page.getByLabel("Nume complet")).toBeVisible();
-  await page.keyboard.press("Tab");
-  await expect(page.locator(":focus")).toHaveAttribute("name", "name");
-  await expect(page.getByRole("combobox")).toHaveCount(0);
-  await page.getByLabel("Nume complet").fill("Alex Driver");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill("ExamplePass1!");
-  await expect(page.getByText(/Minimum 8 caractere/)).toBeVisible();
-  await page.getByLabel("Confirmă parola").fill("ExamplePass1!");
-  await page.getByRole("button", { name: "Creează cont" }).click();
-  await expect(page.getByText(/Contul a fost creat/)).toBeVisible();
-  await expect(page.getByText(/neverificat/i)).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  await page.getByLabel("Full name").fill("Registration Check");
+  await page.getByLabel("Email").fill(`register${Date.now()}@example.com`);
+  await page.getByLabel(/^Password/).fill("ExamplePass1!");
+  await page.getByLabel("Confirm password").fill("DifferentPass2!");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.locator(".MuiAlert-root[role=alert]")).toHaveText("Passwords do not match.");
+
+  await page.getByLabel("Confirm password").fill("ExamplePass1!");
+  const registrationResponse = page.waitForResponse((response) => response.url().endsWith("/auth/register"));
+  await page.getByRole("button", { name: "Create account" }).click();
+  const response = await registrationResponse;
+  expect(response.ok()).toBeTruthy();
+  const payload = await response.json();
+  expect(payload.data.email_verified).toBe(false);
+  await expect(page.getByRole("status")).toHaveText("Your account was created.");
+  await expect(page.getByText(/email.*not verified|not verified.*email/i)).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
 });
 
-test("registration validation identifies each unmet password rule and confirmation mismatch", async ({ page }) => {
-  const email = `invalid${Date.now()}@example.com`;
+test("registration disables duplicate submission while the request is pending", async ({ page }) => {
+  await page.route("**/auth/register", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ data: {
+        id: "registration-pending-check",
+        name: "Pending Check",
+        email: "pending-check@example.com",
+        email_verified: false,
+        role: "user",
+      } }),
+    });
+  });
+
   await page.goto("/register");
-  await page.getByLabel("Nume complet").fill("Validation Check");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill("weak");
-  await page.getByLabel("Confirmă parola").fill("different");
-  await page.getByRole("button", { name: "Creează cont" }).click();
-  const alert = page.locator(".MuiAlert-root[role=alert]");
-  await expect(alert).toContainText("cel puțin 8 caractere");
-  await expect(alert).toContainText("o literă mare");
-  await expect(alert).toContainText("o cifră");
-  await expect(alert).toContainText("un caracter special");
-  await page.getByLabel(/^Parol/).fill("ExamplePass1!");
-  await page.getByLabel("Confirmă parola").fill("DifferentPass2!");
-  await page.getByRole("button", { name: "Creează cont" }).click();
-  await expect(alert).toHaveText("Parolele nu se potrivesc.");
-  await page.getByLabel("Confirmă parola").fill("ExamplePass1!");
-  await page.getByRole("button", { name: "Creează cont" }).click();
-  await expect(page.getByText(/Contul a fost creat/)).toBeVisible();
+  await page.getByLabel("Full name").fill("Pending Check");
+  await page.getByLabel("Email").fill("pending-check@example.com");
+  await page.getByLabel(/^Password/).fill("ExamplePass1!");
+  await page.getByLabel("Confirm password").fill("ExamplePass1!");
+  const form = page.locator("form");
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(form).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("button", { name: "Creating account" })).toBeDisabled();
+  await expect(page.getByRole("status")).toHaveText("Your account was created.");
+});
+
+test("login failure gives safe feedback and its controls remain keyboard accessible", async ({ page }) => {
+  await page.goto("/login");
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
+  await page.getByLabel("Email").fill("not-present@example.com");
+  await page.getByLabel(/^Password/).fill("WrongPass1!");
+  await page.getByLabel("Email").focus();
+  await expect(page.locator(":focus")).toHaveAttribute("name", "email");
+  await page.getByRole("button", { name: "Sign in" }).focus();
+  await expect(page.locator(":focus")).toHaveText("Sign in");
+
+  await page.getByRole("button", { name: "Sign in" }).click();
+  await expect(page.locator(".MuiAlert-root[role=alert]")).toHaveText("The email or password is incorrect.");
 });

@@ -67,7 +67,7 @@ test("Trip History presents empty and retrieval error states", async ({ page }) 
     return route.fulfill({ json: { data: { trips: [], summary: { total_trips: 0, total_distance_m: 0, total_duration_s: 0 }, pagination: { page: 1, page_size: 10, total: 0, total_pages: 0 } } } });
   });
   await page.goto("/trips");
-  await expect(page.getByText("Loading trip history…")).toBeVisible();
+  await expect(page.getByText(/Loading trip history(?:\.{3}|…)/)).toBeVisible();
   await expect(page.getByText("No trips saved yet")).toBeVisible();
   fail = true;
   await page.reload();

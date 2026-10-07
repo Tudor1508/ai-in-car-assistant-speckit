@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box } from "@mui/material";
+import { Alert, Box, Stack, Typography } from "@mui/material";
 import { divIcon, svg, type Polyline as LeafletPolyline } from "leaflet";
 import { AttributionControl, CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { LatLngBoundsExpression } from "leaflet";
@@ -10,6 +10,7 @@ import type { TripRoutePreview, PlaceSelection } from "../tripsSlice";
 type Props = { preview: TripRoutePreview; origin: PlaceSelection; destination: PlaceSelection; height?: number | string; mapLabel?: string };
 const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
 const attribution = process.env.NEXT_PUBLIC_MAP_ATTRIBUTION;
+const attributionText = attribution?.replace(/<[^>]*>/g, " ").replace(/&copy;?/gi, "©").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
 const markerRenderer = svg({ padding: 0.5 });
 
 function poiIcon(kind: "fuel" | "charging" | "attraction" | "restaurant") {
@@ -181,7 +182,12 @@ export default function RouteMap({ preview, origin, destination, height, mapLabe
         <FitRoute bounds={bounds} />
       </MapContainer>
       }
-      {tileFailed && <Alert severity="warning" role="status" sx={{ position: "absolute", inset: 0, zIndex: 1000, borderRadius: 0, alignItems: "center", justifyContent: "center", bgcolor: "rgba(16,34,53,.94)" }}>The route map is temporarily unavailable. Trip details are still available.</Alert>}
+      {tileFailed && <Alert severity="warning" role="status" sx={{ position: "absolute", inset: 0, zIndex: 1000, borderRadius: 0, alignItems: "center", justifyContent: "center", bgcolor: "rgba(16,34,53,.94)" }}>
+        <Stack spacing={1} sx={{ textAlign: "center" }}>
+          <Typography color="inherit">The route map is temporarily unavailable. Trip details are still available.</Typography>
+          {attributionText && <Typography variant="caption" aria-label="Map attribution">{attributionText}</Typography>}
+        </Stack>
+      </Alert>}
     </Box>
   );
 }
