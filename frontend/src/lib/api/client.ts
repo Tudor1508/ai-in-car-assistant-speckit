@@ -94,6 +94,78 @@ export async function apiRequest<T>(
   return body.data;
 }
 
+export async function apiRequestBlob(path: string, payload: unknown, signal?: AbortSignal): Promise<Blob> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-CSRF-Token": csrfToken ?? (await bootstrapCsrf()),
+  };
+  const send = () => fetch(`${getApiBase()}${path}`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: JSON.stringify(payload),
+    signal,
+  });
+  let response = await send();
+  const readError = async (failedResponse: Response): Promise<ErrorEnvelope> => {
+    try {
+      return await failedResponse.clone().json() as ErrorEnvelope;
+    } catch {
+      return {};
+    }
+  };
+  let body: ErrorEnvelope | undefined = response.ok ? undefined : await readError(response);
+  if (response.status === 403 && body?.error?.code === "invalid_csrf") {
+    headers["X-CSRF-Token"] = await bootstrapCsrf();
+    response = await send();
+    body = response.ok ? undefined : await readError(response);
+  }
+  if (!response.ok) {
+    throw new ApiClientError(
+      body?.error?.code ?? "request_failed",
+      body?.error?.message ?? "The request could not be completed",
+      body?.error?.details,
+    );
+  }
+  return response.blob();
+}
+
+export async function apiRequestAudio<T>(path: string, audio: Blob, signal?: AbortSignal): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": audio.type || "application/octet-stream",
+    "X-CSRF-Token": csrfToken ?? (await bootstrapCsrf()),
+  };
+  const send = () => fetch(`${getApiBase()}${path}`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: audio,
+    signal,
+  });
+  const readBody = async (response: Response) => {
+    try {
+      return await response.clone().json() as SuccessEnvelope<T> & ErrorEnvelope;
+    } catch {
+      return {} as SuccessEnvelope<T> & ErrorEnvelope;
+    }
+  };
+  let response = await send();
+  let body = await readBody(response);
+  if (response.status === 403 && body.error?.code === "invalid_csrf") {
+    headers["X-CSRF-Token"] = await bootstrapCsrf();
+    response = await send();
+    body = await readBody(response);
+  }
+  if (!response.ok) {
+    throw new ApiClientError(
+      body.error?.code ?? "request_failed",
+      body.error?.message ?? "The request could not be completed",
+      body.error?.details,
+    );
+  }
+  return body.data as T;
+}
+
 export function setCsrfToken(token: string | null) {
   csrfToken = token;
 }
