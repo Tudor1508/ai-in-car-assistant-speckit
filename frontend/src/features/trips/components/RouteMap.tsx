@@ -1,13 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Box } from "@mui/material";
 import { divIcon, svg, type Polyline as LeafletPolyline } from "leaflet";
 import { AttributionControl, CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { LatLngBoundsExpression } from "leaflet";
 import type { TripRoutePreview, PlaceSelection } from "../tripsSlice";
 
-type Props = { preview: TripRoutePreview; origin: PlaceSelection; destination: PlaceSelection };
+type Props = { preview: TripRoutePreview; origin: PlaceSelection; destination: PlaceSelection; height?: number | string; mapLabel?: string };
 const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
 const attribution = process.env.NEXT_PUBLIC_MAP_ATTRIBUTION;
 const markerRenderer = svg({ padding: 0.5 });
@@ -104,10 +104,8 @@ function AnimatedRangeLine({ positions }: { positions: [number, number][] }) {
   return <Polyline ref={lineRef} positions={positions} pathOptions={{ color: "#f97316", weight: 8, opacity: 1, lineCap: "round", lineJoin: "round", className: "current-range-route" }} />;
 }
 
-export default function RouteMap({ preview, origin, destination }: Props) {
-  if (!tileUrl || !attribution) {
-    return <Alert severity="error">Map configuration is missing. Check NEXT_PUBLIC_MAP_TILE_URL and NEXT_PUBLIC_MAP_ATTRIBUTION.</Alert>;
-  }
+export default function RouteMap({ preview, origin, destination, height, mapLabel = "Map showing the planned route" }: Props) {
+  const [tileFailed, setTileFailed] = useState(!tileUrl || !attribution);
   const points = preview.route.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number]);
   const rangePositions = useMemo(
     () => preview.feasibility.status === "incomplete"
@@ -133,9 +131,9 @@ export default function RouteMap({ preview, origin, destination }: Props) {
     : 0;
 
   return (
-    <Box sx={{ height: { xs: 320, md: 460 }, borderRadius: 3, overflow: "hidden", border: "1px solid #33495b" }} aria-label="Map showing the planned route">
-      <MapContainer center={center} zoom={7} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl={false} preferCanvas>
-        <TileLayer url={tileUrl} attribution={attribution} keepBuffer={0} updateWhenIdle={false} updateWhenZooming={false} />
+    <Box sx={{ height: height ?? { xs: 320, md: 460 }, borderRadius: 3, overflow: "hidden", border: "1px solid #33495b", position: "relative" }} role="region" aria-label={mapLabel}>
+      {tileUrl && attribution && !tileFailed && <MapContainer center={center} zoom={7} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl={false} preferCanvas>
+        <TileLayer url={tileUrl} attribution={attribution} keepBuffer={0} updateWhenIdle={false} updateWhenZooming={false} eventHandlers={{ tileerror: () => setTileFailed(true) }} />
         <AttributionControl position="bottomright" prefix={false} />
         {points.length > 1 && <Polyline positions={points} pathOptions={{ color: "#24c9df", weight: 5, opacity: 0.9 }} />}
         <AnimatedRangeLine positions={rangePositions} />
@@ -182,6 +180,8 @@ export default function RouteMap({ preview, origin, destination }: Props) {
         ))}
         <FitRoute bounds={bounds} />
       </MapContainer>
+      }
+      {tileFailed && <Alert severity="warning" role="status" sx={{ position: "absolute", inset: 0, zIndex: 1000, borderRadius: 0, alignItems: "center", justifyContent: "center", bgcolor: "rgba(16,34,53,.94)" }}>The route map is temporarily unavailable. Trip details are still available.</Alert>}
     </Box>
   );
 }

@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { TripHistoryPage } from "@/features/trips/components/TripHistoryPage";
 
 export default function TripsPage() {
-  redirect("/trip");
+  return <TripHistoryPage />;
 }

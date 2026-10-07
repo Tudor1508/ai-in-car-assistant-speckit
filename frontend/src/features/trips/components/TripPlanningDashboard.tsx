@@ -10,7 +10,7 @@ import { authCleared } from "@/features/auth/authSlice";
 import { ApiClientError, setCsrfToken } from "@/lib/api/client";
 import { listVehicles, safeVehicleError } from "@/features/vehicles/vehiclesApi";
 import { vehiclesFailed, vehiclesLoaded, vehiclesLoading } from "@/features/vehicles/vehiclesSlice";
-import { previewTrip, safeTripError } from "../tripsApi";
+import { previewTrip, safeTripError, saveTripHistory } from "../tripsApi";
 import {
   destinationSelected,
   originSelected,
@@ -18,6 +18,7 @@ import {
   tripPreviewLoaded,
   tripPreviewLoading,
   routeOptionSelected,
+  historySaving, historySaved, historySaveFailed,
 } from "../tripsSlice";
 import type { TripRouteChoice, TripRouteOption } from "../tripsSlice";
 import { PlaceAutocomplete } from "./PlaceAutocomplete";
@@ -40,6 +41,7 @@ export function TripPlanningDashboard() {
   const [selectedPreference, setSelectedPreference] = useState<TripRouteChoice["preference"]>("fastest");
   const [originText, setOriginText] = useState("");
   const [destinationText, setDestinationText] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
   const selectedVehicle = useMemo(() => vehicles.items.find((item) => item.id === trip.vehicleId), [vehicles.items, trip.vehicleId]);
   const selectedChoice = trip.preview?.route_choices?.find((choice) => choice.preference === selectedPreference && choice.status === "available");
   const selectedOption = trip.preview?.route_options?.find((option) => option.id === (selectedChoice?.route_option_id ?? trip.selectedRouteOptionId));
@@ -112,6 +114,20 @@ export function TripPlanningDashboard() {
         return;
       }
       dispatch(tripPreviewFailed(safeTripError(cause)));
+    }
+  }
+  async function saveSelectedTrip() {
+    if (!displayedPreview || !trip.origin || !trip.destination || !trip.vehicleId || trip.currentLevelPercent === null) return;
+    dispatch(historySaving()); setSaveMessage("");
+    try {
+      await saveTripHistory({ origin: trip.origin, destination: trip.destination, vehicle_id: trip.vehicleId,
+        current_level_percent: trip.currentLevelPercent, route_preference: selectedPreference,
+        route: displayedPreview.route, feasibility: displayedPreview.feasibility, legs: displayedPreview.legs,
+        stops: displayedPreview.stops, attractions: displayedPreview.attractions ?? [], restaurants: displayedPreview.restaurants ?? [] });
+      dispatch(historySaved()); setSaveMessage("Trip saved to Trip History.");
+    } catch (cause) {
+      if (cause instanceof ApiClientError && cause.code === "authentication_required") { setCsrfToken(null); dispatch(authCleared()); router.replace("/login"); return; }
+      const message = safeTripError(cause); dispatch(historySaveFailed(message)); setSaveMessage(message);
     }
   }
   return (
@@ -196,7 +212,12 @@ export function TripPlanningDashboard() {
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.3fr) minmax(320px, .7fr)" }, gap: 2 }}>
                 <RouteMap preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
                 <Card sx={{ bgcolor: "#102235", color: "white", border: "1px solid #34495d", borderRadius: 4 }}>
-                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={displayedPreview} /></Stack></CardContent>
+                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={displayedPreview} />
+                    <Button variant="contained" onClick={() => void saveSelectedTrip()} disabled={trip.historySaveStatus === "loading"}>
+                      {trip.historySaveStatus === "loading" ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}Save trip
+                    </Button>
+                    {saveMessage && <Typography role={trip.historySaveStatus === "failed" ? "alert" : "status"}>{saveMessage}</Typography>}
+                  </Stack></CardContent>
                 </Card>
               </Box>
             )}
