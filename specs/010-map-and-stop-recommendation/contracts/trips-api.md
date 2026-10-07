@@ -1,8 +1,8 @@
-# Trips API Contract: Feature 008 Extension
+# Trips API Contract: Feature 010 Extension
 
 ## Compatibility and security
 
-Feature 008 extends the existing authenticated `POST /trips/preview` contract in [Feature 007](../../007-trip-planning-dashboard/contracts/trips-api.md). It does not add a new endpoint, provider, or persistence model.
+Feature 010 extends the existing authenticated `POST /trips/preview` contract in [Feature 007](../../007-trip-planning-dashboard/contracts/trips-api.md). It does not add a new endpoint, provider, or persistence model.
 
 - All existing authentication, owner-scoped vehicle lookup, CSRF/origin checks, strict input validation, coordinate conventions, provider-key isolation, and `{ "data": ... }` success / shared `{ "error": ... }` error envelopes remain in force.
 - The frontend calls only the authenticated Drive Wise API using the existing credentialed `apiRequest` wrapper. ORS/OpenPOIService calls remain backend-only.

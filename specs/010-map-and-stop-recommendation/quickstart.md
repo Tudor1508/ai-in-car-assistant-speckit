@@ -1,11 +1,11 @@
-# Quickstart: Feature 008 Route Preferences and Scenic POIs
+# Quickstart: Feature 010 Route Preferences and Scenic POIs
 
-This guide exercises the 008 extension through the real authenticated frontend, backend, ORS, and OpenPOIService integrations. It does not use provider mocks, fixed coordinates, sample provider responses, or a new provider. Preview requests consume provider quota; use configured test locations and do not repeat requests unnecessarily.
+This guide exercises the 010 extension through the real authenticated frontend, backend, ORS, and OpenPOIService integrations. It does not use provider mocks, fixed coordinates, sample provider responses, or a new provider. Preview requests consume provider quota; use configured test locations and do not repeat requests unnecessarily.
 
 ## Prerequisites and configuration
 
 1. Complete the Feature 007 setup in [007 quickstart](../007-trip-planning-dashboard/quickstart.md). In particular, configure the ignored local `backend/.env` with a valid ORS/HeiGIT API key, allowed frontend origin, provider base URL/timeouts, existing POI corridor/result limit, test account/vehicle, and environment-supplied route scenarios. Never put a provider key in frontend configuration or a committed example.
-2. Configure the 008 tourist category IDs in backend-only settings as `OPENROUTESERVICE_TOURIST_CATEGORY_IDS=622,627` (`attraction` and `viewpoint`). The implementation must read this setting through `TripSettings` and add the same non-secret entry to `backend/.env.example`; never add it to `frontend/.env.local`.
+2. Configure the 010 tourist category IDs in backend-only settings as `OPENROUTESERVICE_TOURIST_CATEGORY_IDS=622,627` (`attraction` and `viewpoint`). The implementation must read this setting through `TripSettings` and add the same non-secret entry to `backend/.env.example`; never add it to `frontend/.env.local`.
 3. Complete the Feature 007 frontend `.env.local` setup for API base URL, map tiles, attribution, browser host/port, and Playwright URL. The ORS/HeiGIT API key and base URL remain backend-only.
 4. Use an account with at least one owned vehicle. Verify the vehicle's saved type/range and current fuel/battery percentage before comparing route options.
 
@@ -29,7 +29,7 @@ cd frontend
 npm run dev -- --hostname $env:DRIVE_WISE_FRONTEND_HOST --port $env:DRIVE_WISE_FRONTEND_PORT
 ```
 
-Open the configured frontend origin, sign in, and go to **Plan a trip**. Alembic remains part of normal backend startup when migrations are pending; 008 itself is not expected to add persistence or a migration.
+Open the configured frontend origin, sign in, and go to **Plan a trip**. Alembic remains part of normal backend startup when migrations are pending; 010 itself is not expected to add persistence or a migration.
 
 ## Manual acceptance walkthrough
 
@@ -56,4 +56,4 @@ Open the configured frontend origin, sign in, and go to **Plan a trip**. Alembic
 
 Implementation tasks define the backend and Playwright checks. Run them only after the feature is implemented and use the commands and real-provider scenario configuration from the 007 quickstart. Run live-provider scenarios sequentially to respect provider quotas. Do not mock providers, intercept `/trips` calls, commit test credentials, or assert fixed attraction/station names, exact POI counts, or fixed route geometry.
 
-See [008 API contract](contracts/trips-api.md), [008 UI contract](contracts/trips-ui.md), [008 research](research.md), and the [007 API contract](../007-trip-planning-dashboard/contracts/trips-api.md).
+See [010 API contract](contracts/trips-api.md), [010 UI contract](contracts/trips-ui.md), [010 research](research.md), and the [007 API contract](../007-trip-planning-dashboard/contracts/trips-api.md).

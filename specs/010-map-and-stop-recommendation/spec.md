@@ -1,6 +1,6 @@
 # Feature Specification: Map and Stop Recommendations
 
-**Feature Branch**: `008-map-and-stop-recommendations`
+**Feature Branch**: `010-map-and-stop-recommendation`
 **Created**: 2026-10-05
 **Status**: Draft
 **Input**: Extend the implemented 007 trip preview so one action generates Fastest, Shortest, and Scenic route choices, and show tourist attraction recommendations on Scenic trips.
@@ -9,13 +9,13 @@
 
 Feature 007 already provides an authenticated, transient trip preview. `POST /trips/preview` accepts origin, destination, vehicle ID, and current fuel/battery percentage; it returns one route geometry, distance, driving duration, ordered route legs, range feasibility, and compatible fuel or charging stops. The backend derives vehicle type and range from the account-owned vehicle. The map displays that route and its origin, destination, and ordered station markers. The route summary displays route metrics, legs, stop type, name, and distance from the previous leg. First-leg range uses the entered current level; subsequent legs assume a full vehicle at each compatible stop. The preview is not persisted.
 
-The 007 specification and contracts do not define route preferences or tourist attraction stops. The 007 plan explicitly lists alternate route styles as out of scope. Current request/response schemas have no route preference or attraction type; current route provider code requests a single directions result and queries compatible charging/fuel stations; current frontend has no route preference control or attraction markers/list items. Thus the three requested preferences and tourist attractions are new requirements for 008, not behavior already delivered by 007.
+The 007 specification and contracts do not define route preferences or tourist attraction stops. The 007 plan explicitly lists alternate route styles as out of scope. Current request/response schemas have no route preference or attraction type; current route provider code requests a single directions result and queries compatible charging/fuel stations; current frontend has no route preference control or attraction markers/list items. Thus the three requested preferences and tourist attractions are new requirements for 010, not behavior already delivered by 007.
 
 The old application README describes fastest, shortest/balanced, and scenic route choices and tourism recommendations, but is a behavior reference rather than evidence of the current implementation or an approved external integration. The `plan_route.png` reference depicts Fastest, Shortest, and Avoid highways; it does not depict Scenic. The route example illustrates a route line and ordered station markers. The project constitution and 007 contracts require explicit backend contracts, authenticated account-scoped data, safe provider errors, accessible UI, and preservation of the approved stack and existing behavior.
 
 The requested `docs/old_app_README.md` path was not present; the available README reviewed is `docs/reference-ui/old_app_README.md`.
 
-### Decisions confirmed for 008
+### Decisions confirmed for 010
 
 - Reuse only the existing 007 ORS Directions and OpenPOIService integrations; do not add another provider or service.
 - Fastest minimizes ORS estimated driving duration; Shortest minimizes ORS estimated driving distance, to the extent supported by its driving directions request. If the requested choice is unavailable, report that clearly and never silently relabel/substitute the selection.
@@ -32,7 +32,7 @@ The 007 adapter currently posts one directions request without `preference` or `
 
 Current [ORS Directions request documentation](https://giscience.github.io/openrouteservice/api-reference/endpoints/directions/requests-and-return-types) describes route results as a list; [ORS API restrictions](https://openrouteservice.org/restrictions/) allow at most three alternative routes and restrict alternative-route requests to routes no longer than 100 km. ORS does not guarantee that the requested count is returned. Therefore ORS alternatives alone cannot guarantee the most attraction-rich route for journeys above 100 km or when too few distinct alternatives are returned. For shorter journeys, ORS may provide a bounded candidate set, but it does not optimize candidates against OpenPOI attraction count.
 
-The [OpenPOIService category documentation](https://giscience.github.io/openrouteservice/api-reference/endpoints/poi/) lists POI category groups and IDs, including tourism categories. For 008, the confirmed category names are `attraction` and `viewpoint`, if available from the source; the currently configured 007 categories cover fuel and charging only. The [OpenPOIService repository documentation](https://github.com/GIScience/openpoiservice#api-documentation) describes POI results as a GeoJSON FeatureCollection; normalize/display only the name, category, and location fields actually supplied.
+The [OpenPOIService category documentation](https://giscience.github.io/openrouteservice/api-reference/endpoints/poi/) lists POI category groups and IDs, including tourism categories. For 010, the confirmed category names are `attraction` and `viewpoint`, if available from the source; the currently configured 007 categories cover fuel and charging only. The [OpenPOIService repository documentation](https://github.com/GIScience/openpoiservice#api-documentation) describes POI results as a GeoJSON FeatureCollection; normalize/display only the name, category, and location fields actually supplied.
 
 ### Scenic candidate policy and capability boundary
 
@@ -121,7 +121,7 @@ As a driver, I can tell which canonical route a result represents, how stops rel
 - **FR-013**: Loading, validation, no-route, unsupported/unavailable preference, provider failure, no-attraction, and incomplete-range states MUST be distinguishable and recoverable where retry/correction is possible. Existing inputs MUST be preserved after recoverable errors.
 - **FR-014**: Responses MUST use the project's existing authenticated API wrapper and shared error envelope. Provider credentials and raw provider-internal messages MUST remain server-side.
 - **FR-015**: The map MUST retain its responsive Leaflet implementation and visible map attribution. Route and stop controls/list must remain keyboard accessible, have persistent labels, and announce asynchronous status/errors accessibly.
-- **FR-016**: Route preview and attraction recommendations MUST remain transient in 008. This feature MUST NOT add trip history, saved trip results, analytics, or persistence of route preferences or recommendations.
+- **FR-016**: Route preview and attraction recommendations MUST remain transient in 010. This feature MUST NOT add trip history, saved trip results, analytics, or persistence of route preferences or recommendations.
 - **FR-017**: Existing 007 place search, current-location selection, vehicle selection, current level input, favorite endpoint selection/saving, navigation, and session behavior MUST continue to work.
 - **FR-018**: For each Scenic candidate, the backend MUST adapt the tourist POI buffer to keep the estimated query area within ORS's 50 km² maximum, without exceeding the configured corridor or ORS's 2 km maximum search radius. This adaptation MUST apply only to tourist POI queries; existing 007 fuel/charging queries MUST retain their configured corridor. A full route linestring whose projected length exceeds ORS's 500 km maximum remains Scenic-unavailable and MUST NOT be split.
 
@@ -140,7 +140,7 @@ As a driver, I can tell which canonical route a result represents, how stops rel
 - **SC-004**: When all Scenic candidates have zero attraction results, Scenic remains available with an explicit zero-attractions message while Fastest/Shortest routes and energy stops remain usable.
 - **SC-005**: In 100% of tested unavailable-preference, no-route, routing-provider failure, attraction-provider failure, validation, and incomplete-range cases, the state is distinguishable, inputs are retained when recovery is possible, and no raw provider details or credentials are shown.
 - **SC-006**: A route preference change cannot display route metrics or geometry from a previous preference as if they belong to the new one; loading status is exposed visually and to assistive technology.
-- **SC-007**: No preview, selected preference, or attraction recommendation is persisted by 008; no 009 history behavior is introduced.
+- **SC-007**: No preview, selected preference, or attraction recommendation is persisted by 010; no 009 history behavior is introduced.
 - **SC-008**: For every Scenic result, 100% of returned attraction markers match the separate recommendation list and its route order; none are included in the energy-stop count or feasibility calculation.
 - **SC-009**: When multiple Scenic candidates tie for the highest attraction count, exactly one Scenic choice is exposed, selecting the quickest tied candidate. ORS alternatives are not displayed separately.
 - **SC-010**: For every queried Scenic candidate within the complete-linestring limit, the computed tourist buffer is positive, no greater than the configured corridor or 2 km, and keeps the estimated query area at or below 50 km²; 007 energy-stop queries continue using the configured corridor unchanged.
@@ -159,14 +159,14 @@ As a driver, I can tell which canonical route a result represents, how stops rel
 - Rebuilding the 007 map or replacing its existing fuel/charging stop planner.
 - Implementing trip history, saved trip results, analytics, or any persistence assigned to `009-saved-routes-and-history`.
 - User editing, deleting, or marking recommended stops as visited; route navigation/turn-by-turn guidance; family-friendly filtering; fuel/charging dwell-time calculation; attraction dwell-time calculation.
-- Selecting or committing attraction recommendations as mandatory waypoints; attractions never alter 008 route geometry or energy feasibility.
+- Selecting or committing attraction recommendations as mandatory waypoints; attractions never alter 010 route geometry or energy feasibility.
 
 ## Dependencies and Integration with 007 and 009
 
-- 008 extends the existing `POST /trips/preview` flow, trip-preview UI/state, `RouteMetrics`, route geometry, and ordered `RouteStop` concepts documented in `specs/007-trip-planning-dashboard/contracts/trips-api.md` and `trips-ui.md`. It does not create a second planner or map.
-- The 007 request currently has no preference field; the response currently has no selected preference or tourist stop category. The 007 route is a single driving result, and its stop schema permits only `charging` and `fuel`. 008 must explicitly version/evolve the existing request/response contract and represent tourist stops without breaking current 007 clients or semantics. The compatible contract evolution mechanism is to be established during planning; this specification does not prescribe a versioning mechanism.
+- 010 extends the existing `POST /trips/preview` flow, trip-preview UI/state, `RouteMetrics`, route geometry, and ordered `RouteStop` concepts documented in `specs/007-trip-planning-dashboard/contracts/trips-api.md` and `trips-ui.md`. It does not create a second planner or map.
+- The 007 request currently has no preference field; the response currently has no selected preference or tourist stop category. The 007 route is a single driving result, and its stop schema permits only `charging` and `fuel`. 010 must explicitly version/evolve the existing request/response contract and represent tourist stops without breaking current 007 clients or semantics. The compatible contract evolution mechanism is to be established during planning; this specification does not prescribe a versioning mechanism.
 - Fuel/charging stop calculation remains vehicle-aware and backend-authoritative under 007. Attraction recommendations must be associated with the selected route result and must not override or falsely satisfy range requirements.
-- 009 may depend on the selected preference and the route/stop identifiers or snapshots returned by 008 if future history is to reproduce what the user saw. 008 does not persist or design that history schema; 009 owns those decisions.
+- 009 may depend on the selected preference and the route/stop identifiers or snapshots returned by 010 if future history is to reproduce what the user saw. 010 does not persist or design that history schema; 009 owns those decisions.
 
 ## Assumptions and Open Decisions
 

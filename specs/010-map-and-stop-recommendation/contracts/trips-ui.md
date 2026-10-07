@@ -1,4 +1,4 @@
-# Trip Planning UI Contract: Feature 008 Extension
+# Trip Planning UI Contract: Feature 010 Extension
 
 ## Existing 007 behavior retained
 

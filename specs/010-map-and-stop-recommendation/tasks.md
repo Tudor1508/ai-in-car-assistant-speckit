@@ -16,8 +16,8 @@ description: "Task list for extending trip route preferences and scenic attracti
 
 - [x] T001 Record the confirmed Scenic candidate policy in `spec.md` and `plan.md`: count distinct `attraction`/`viewpoint` POIs across complete ORS routes, compare Fastest and Shortest on long trips, include alternatives only when ORS returns them, choose the quickest candidate among tied Scenic scores, and explain Scenic unavailability when comparable candidates cannot be obtained. No global-optimum claim, segment composition, new provider, or interval filter. **Complete; no product decision remains open.**
 - [x] T002 Reconcile `spec.md` and `plan.md` with the confirmed policy, intentionally unspecified attraction interval, optional preference/legacy behavior, separate non-waypoint attraction collection, and no-history boundary. **Complete.**
-- [x] T003 Document the approved capability, source, normalized data, limits, empty/error semantics, and alternatives in `specs/008-map-and-stop-recommendations/research.md`; use official ORS/OpenPOIService references and avoid promoting README examples into technical decisions. **Complete and reviewed.**
-- [x] T004 Define the compatible extension of the existing preview request/response and UI states in `specs/008-map-and-stop-recommendations/contracts/trips-api.md`, `specs/008-map-and-stop-recommendations/contracts/trips-ui.md`, and `specs/008-map-and-stop-recommendations/quickstart.md`; retain 007 auth/CSRF, safe errors, owner-scoped vehicle lookup, range semantics, map attribution, and non-persistence. **Complete and reviewed.**
+- [x] T003 Document the approved capability, source, normalized data, limits, empty/error semantics, and alternatives in `specs/010-map-and-stop-recommendation/research.md`; use official ORS/OpenPOIService references and avoid promoting README examples into technical decisions. **Complete and reviewed.**
+- [x] T004 Define the compatible extension of the existing preview request/response and UI states in `specs/010-map-and-stop-recommendation/contracts/trips-api.md`, `specs/010-map-and-stop-recommendation/contracts/trips-ui.md`, and `specs/010-map-and-stop-recommendation/quickstart.md`; retain 007 auth/CSRF, safe errors, owner-scoped vehicle lookup, range semantics, map attribution, and non-persistence. **Complete and reviewed.**
 
 **Gate**: Product decisions and T003-T004 design artifacts are complete and reviewed. The user subsequently approved an adaptive tourist-only POI corridor to satisfy the documented area limit while preserving the configured energy-stop corridor. Tasks T005-T021 and T026 are unblocked. No interval behavior is planned; the only providers are the existing ORS and OpenPOIService.
 
@@ -88,10 +88,10 @@ description: "Task list for extending trip route preferences and scenic attracti
 
 **Purpose**: Verify error/loading/empty states, security, accessibility, responsiveness, and regression across the extended 007 flow.
 
-- [x] T022 [P] Audit `backend/src/trips/` and `frontend/src/features/trips/` for shared contract consistency, account authorization, secret isolation, safe provider errors, no stale route/preference combinations, matching map/list stop order, and no 008 persistence/history; correct only feature-related findings.
+- [x] T022 [P] Audit `backend/src/trips/` and `frontend/src/features/trips/` for shared contract consistency, account authorization, secret isolation, safe provider errors, no stale route/preference combinations, matching map/list stop order, and no 010 persistence/history; correct only feature-related findings.
 - [x] T023 Run the approved focused backend tests for `backend/tests/test_trip_preview.py` and `backend/tests/test_trip_attractions.py`, plus the existing 007 trip/auth/vehicle regression coverage; record provider-backed configuration and deterministic edge-case coverage without adding runtime providers or fixed live test locations.
 - [x] T024 Run the approved frontend type-check/build and Playwright coverage in `frontend/tests/trip-planning.spec.ts` against the actual frontend/backend/integrations; verify keyboard and narrow-screen behavior, map attribution, route-choice states, scenic attraction states, energy stops, and recoverable errors.
-- [x] T025 Compare the implemented extension with `specs/008-map-and-stop-recommendations/spec.md`, this plan, the 007 contracts, and the constitution; resolve all mismatches before acceptance and confirm history remains in 009.
+- [x] T025 Compare the implemented extension with `specs/010-map-and-stop-recommendation/spec.md`, this plan, the 007 contracts, and the constitution; resolve all mismatches before acceptance and confirm history remains in 009.
 
 ### Verification Record
 
@@ -154,7 +154,7 @@ description: "Task list for extending trip route preferences and scenic attracti
 
 ## MVP and Scope Guard
 
-The feature is not complete until all three route preferences, Scenic attraction presentation, and preservation of 007 energy-stop feasibility are verified. Do not declare a Fastest/Shortest-only slice as completion of 008. Do not add a new map, station planner, database entity/migration, saved trip, trip history, analytics, or fixed tourist-stop interval. T001-T004 are complete; implementation tasks are unblocked and may proceed in dependency order. No product decision remains open.
+The feature is not complete until all three route preferences, Scenic attraction presentation, and preservation of 007 energy-stop feasibility are verified. Do not declare a Fastest/Shortest-only slice as completion of 010. Do not add a new map, station planner, database entity/migration, saved trip, trip history, analytics, or fixed tourist-stop interval. T001-T004 are complete; implementation tasks are unblocked and may proceed in dependency order. No product decision remains open.
 
 ## Follow-up: Canonical route generation UX
 
