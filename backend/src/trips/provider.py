@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 _OPENPOI_MAX_QUERY_AREA_M2 = 50_000_000.0
 _OPENPOI_MAX_LINESTRING_LENGTH_M = 500_000.0
 _OPENPOI_MAX_SEARCH_RADIUS_M = 2_000.0
+_MAX_RECOMMENDATION_DISTANCE_FROM_ROUTE_M = 10_000.0
 
 
 def scenic_poi_buffer_m(projected_route_length_m: float, configured_corridor_m: float) -> float:
@@ -307,6 +308,8 @@ class ORSProvider:
             lon, lat = self._finite_number(coords[0]), self._finite_number(coords[1])
             if lon is None or lat is None or not -180 <= lon <= 180 or not -90 <= lat <= 90:
                 continue
+            if self._distance_to_route_m(geometry.coordinates, lon, lat) > _MAX_RECOMMENDATION_DISTANCE_FROM_ROUTE_M:
+                continue
             raw_category = properties.get("category") or properties.get("category_id")
             raw_categories = properties.get("category_ids")
             if isinstance(raw_category, dict):
@@ -558,6 +561,8 @@ class ORSProvider:
             longitude, latitude = self._finite_number(coordinates[0]), self._finite_number(coordinates[1])
             if longitude is None or latitude is None or not -180 <= longitude <= 180 or not -90 <= latitude <= 90:
                 continue
+            if self._distance_to_route_m(geometry.coordinates, longitude, latitude) > _MAX_RECOMMENDATION_DISTANCE_FROM_ROUTE_M:
+                continue
             source_id = properties.get("place_id") or feature.get("id")
             source_id = str(source_id) if source_id is not None else None
             if source_id and source_id in seen:
@@ -617,7 +622,7 @@ class ORSProvider:
                 "filter": {
                     "type": "polyline",
                     "geometry": {"type": "LineString", "coordinates": coordinates},
-                    "buffer": min(self._settings.poi_corridor_meters, 100_000.0),
+                    "buffer": min(self._settings.poi_corridor_meters, _MAX_RECOMMENDATION_DISTANCE_FROM_ROUTE_M),
                 },
                 "limit": min(self._settings.poi_limit, 500),
             }
@@ -830,6 +835,21 @@ class ORSProvider:
             cumulative_distance += segment_length
             previous = current
         return closest_progress
+
+    @classmethod
+    def _distance_to_route_m(
+        cls,
+        coordinates: list[tuple[float, float]],
+        longitude: float,
+        latitude: float,
+    ) -> float:
+        """Return the nearest distance from a POI to any route segment."""
+        if len(coordinates) < 2:
+            return math.inf
+        return min(
+            cls._distance_to_segment_m(longitude, latitude, first, second)[0]
+            for first, second in zip(coordinates, coordinates[1:])
+        )
 
     @staticmethod
     def _great_circle_distance_m(

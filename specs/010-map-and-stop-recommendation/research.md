@@ -44,6 +44,7 @@ The user approved reducing the OpenPOI buffer for Scenic tourism queries only so
 4. Query the existing OpenPOIService with the combined confirmed category IDs and each candidate's full geometry, subject to ORS limits and project corridor/result limit. Any inability to compare candidates completely is a Scenic-unavailable outcome, not a reason to silently select a fallback.
 5. Apply the existing 007 energy-stop/range behavior to each route option returned to the user. Each option carries its own route geometry, metrics, legs, feasibility, energy stops, and Scenic attraction list so switching tied options cannot mix route data.
 6. Count/category scoring uses the full returned POI set for route selection. Displayed attractions are not included in energy-stop count or feasibility. The Scenic list is ordered by route progress, with at most one item per 100 km route section, excluding the first 10 km and recommendations within 10 km of energy stops or one another.
+7. Filter all returned tourist attractions and restaurants to a maximum 10 km straight-line distance from the nearest segment of their selected route geometry.
 
 ## Alternatives explicitly not selected
 

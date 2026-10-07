@@ -152,6 +152,7 @@ The example's names, identifiers, coordinates, and metrics are illustrative sche
 - A request-scoped opaque `id`; IDs are not stable across previews and must not be persisted or used as historical identifiers.
 - For `all`, exactly three canonical route options are returned with unique IDs and one `route_labels` value each: Fastest, Shortest, and Scenic. Keep options separate even when geometries match. ORS alternatives used to score Scenic are not exposed as separate choices.
 - Scenic display recommendations include at most one attraction per 100 km route section, omit attractions within the first 10 km, and omit recommendations within 10 km of mandatory energy stops or one another. `attraction_count` reports this displayed, filtered recommendation count; candidate scoring uses the distinct source POI count before display filtering.
+- Tourist attractions and restaurants must each be within 10 km of the selected route geometry; farther source results are filtered out before returning the preview.
 
 For route options, `route`, `legs`, and `stops` follow 007 meanings. The route geometry and distance/duration include any 007 energy-stop routing behavior for that option. `attractions` remain a separate recommendation collection; they do not alter geometry or feasibility and are excluded from `stops` and energy-stop counts. The response's `duration_s` is estimated driving time and excludes stop dwell time.
 
