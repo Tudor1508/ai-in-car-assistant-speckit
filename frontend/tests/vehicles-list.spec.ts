@@ -12,7 +12,7 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
 }
 
 async function addVehicle(page: Page, name: string) {
@@ -93,7 +93,7 @@ test("failed refresh retains the loaded garage and session loss clears it for th
     if (route.request().method() === "GET") await vehicleListGate;
     await route.continue();
   });
-  await page.getByRole("link", { name: "My vehicles" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "My vehicles" }).click();
   await expect(page.getByText("Owner A car")).toHaveCount(0);
   releaseVehicleList();
   await expect(page.getByText(/garajul t/i)).toBeVisible();

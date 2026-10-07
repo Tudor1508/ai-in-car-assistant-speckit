@@ -3,6 +3,7 @@ import type {
   FavoriteRoute,
   PlaceSelection,
   TripRoutePreview,
+  RoutePreference,
 } from "./tripsSlice";
 
 export type PlaceSearchResult = { places: PlaceSelection[] };
@@ -14,6 +15,7 @@ type TripPreviewPayload = {
   destination: PlaceSelection;
   vehicle_id: string;
   current_level_percent: number;
+  route_preference?: RoutePreference | "all";
 };
 
 export function safeTripError(error: unknown): string {
@@ -30,6 +32,7 @@ export function safeTripError(error: unknown): string {
     if (error.code === "routing_provider_unavailable") {
       return "Serviciul de rutare nu este disponibil momentan. Încearcă din nou.";
     }
+    if (error.code === "route_preference_unavailable") return "Traseul scenic nu este disponibil pentru această călătorie. Alege Fastest sau Shortest.";
     if (error.code === "validation_error") {
       return "Verifică locațiile și nivelul de combustibil sau baterie.";
     }

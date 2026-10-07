@@ -25,7 +25,7 @@ async function registerAndLogin(page: Page) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel(/^Parol/).fill(password);
   await page.getByRole("button", { name: /Autentificare/i }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
 }
 
 async function choose(page: Page, label: string, query: string) {

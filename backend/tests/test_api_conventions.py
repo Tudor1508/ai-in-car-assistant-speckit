@@ -33,6 +33,12 @@ def create_contract_app() -> FastAPI:
     def explicit_http_error() -> None:
         raise HTTPException(status_code=404, detail="secret internal detail")
 
+    @app.get("/scenic-unavailable", responses=common_error_responses())
+    def scenic_unavailable() -> None:
+        raise HTTPException(status_code=422, detail={
+            "code": "route_preference_unavailable", "reason": "poi_geometry_limit",
+        })
+
     return app
 
 
@@ -135,6 +141,17 @@ def test_http_exception_detail_is_not_exposed() -> None:
         }
     }
     assert "secret internal detail" not in response.text
+
+
+def test_scenic_error_includes_only_allowlisted_reason() -> None:
+    response = TestClient(create_contract_app()).get("/scenic-unavailable")
+
+    assert response.status_code == 422
+    assert response.json()["error"] == {
+        "code": "route_preference_unavailable",
+        "message": "Scenic recommendations are unavailable for this route. Choose Fastest or Shortest.",
+        "details": [{"preference": "scenic", "reason": "poi_geometry_limit"}],
+    }
 
 
 def test_contract_fixture_is_not_mounted_or_published_by_production_app() -> None:

@@ -46,7 +46,9 @@ def create_test_vehicle(
     csrf_token: str,
     *,
     range_km: int | None = None,
+    vehicle_type: str | None = None,
 ) -> dict[str, object]:
+    selected_type = vehicle_type or inputs.vehicle_type
     response = client.post(
         "/vehicles",
         headers={
@@ -56,11 +58,11 @@ def create_test_vehicle(
         json={
             "name": inputs.vehicle_name,
             "model": inputs.vehicle_model,
-            "type": inputs.vehicle_type,
+            "type": selected_type,
             "year": inputs.vehicle_year,
             "range_km": range_km if range_km is not None else inputs.vehicle_range_km,
             "mileage_km": inputs.vehicle_mileage_km,
-            "fuel_type": inputs.fuel_type,
+            "fuel_type": inputs.fuel_type if selected_type == "combustion" else None,
         },
     )
     assert response.status_code == 201, response.text

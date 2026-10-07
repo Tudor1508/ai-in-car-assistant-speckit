@@ -15,8 +15,17 @@ export type FavoriteRoute = {
   created_at: string;
 };
 
+export type RoutePreference = "fastest" | "shortest" | "scenic";
+export type RouteLabel = RoutePreference;
+export type TouristAttraction = { source_id: string | null; name: string | null; category: "attraction" | "viewpoint"; latitude: number; longitude: number; sequence: number; route_progress_m: number };
+export type RouteRestaurant = { source_id: string | null; name: string | null; category: "restaurant"; latitude: number; longitude: number; sequence: number; route_progress_m: number };
+export type RouteStop = { sequence: number; provider_id: string | null; name: string | null; station_type: "charging" | "fuel"; latitude: number; longitude: number; leg_distance_m: number; route_progress_m: number };
+export type RouteFeasibility = { status: "complete" | "incomplete"; message: string | null; first_unreachable_stop?: RouteStop | null; next_station_distance_km?: number | null; additional_range_km?: number | null };
+export type TripRouteChoice = { preference: RoutePreference; status: "available" | "unavailable"; route_option_id: string | null; reason: "no_attractions_found" | "no_distinct_candidates" | "poi_geometry_limit" | "poi_results_incomplete" | "provider_unavailable" | null };
+export type TripRouteOption = { id: string; attraction_count: number; route_labels: RouteLabel[]; feasibility: TripRoutePreview["feasibility"]; vehicle: TripRoutePreview["vehicle"]; route: TripRoutePreview["route"]; legs: TripRoutePreview["legs"]; stops: TripRoutePreview["stops"]; attractions: TouristAttraction[]; restaurants?: RouteRestaurant[] };
+
 export type TripRoutePreview = {
-  feasibility: { status: "complete" | "incomplete"; message: string | null };
+  feasibility: RouteFeasibility;
   vehicle: {
     id: string;
     current_level_percent: number;
@@ -29,16 +38,14 @@ export type TripRoutePreview = {
     duration_s: number;
   };
   legs: { sequence: number; distance_m: number; duration_s: number }[];
-  stops: {
-    sequence: number;
-    provider_id: string | null;
-    name: string | null;
-    station_type: "charging" | "fuel";
-    latitude: number;
-    longitude: number;
-    leg_distance_m: number;
-    route_progress_m: number;
-  }[];
+  stops: RouteStop[];
+  route_preference?: RoutePreference | "all" | null;
+  route_labels?: RouteLabel[];
+  selected_route_option_id?: string | null;
+  route_options?: TripRouteOption[] | null;
+  route_choices?: TripRouteChoice[] | null;
+  attractions?: TouristAttraction[] | null;
+  restaurants?: RouteRestaurant[] | null;
 };
 
 type TripsState = {
@@ -46,6 +53,7 @@ type TripsState = {
   destination: PlaceSelection | null;
   vehicleId: string | null;
   currentLevelPercent: number | null;
+  selectedRouteOptionId: string | null;
   preview: TripRoutePreview | null;
   favorites: FavoriteRoute[];
   favoritesStatus: "idle" | "loading" | "succeeded" | "failed";
@@ -61,6 +69,7 @@ const initialState: TripsState = {
   destination: null,
   vehicleId: null,
   currentLevelPercent: null,
+  selectedRouteOptionId: null,
   preview: null,
   favorites: [],
   favoritesStatus: "idle",
@@ -75,6 +84,7 @@ const tripsSlice = createSlice({
   name: "trips",
   initialState,
   reducers: {
+    routeOptionSelected(state, action: PayloadAction<string>) { state.selectedRouteOptionId = action.payload; },
     originSelected(state, action: PayloadAction<PlaceSelection | null>) {
       state.origin = action.payload;
       state.preview = null;
@@ -106,6 +116,7 @@ const tripsSlice = createSlice({
     },
     tripPreviewLoaded(state, action: PayloadAction<TripRoutePreview>) {
       state.preview = action.payload;
+      state.selectedRouteOptionId = action.payload.selected_route_option_id ?? action.payload.route_options?.[0]?.id ?? null;
       state.status = "succeeded";
       state.error = null;
     },
@@ -156,6 +167,7 @@ const tripsSlice = createSlice({
 
 export const {
   originSelected,
+  routeOptionSelected,
   destinationSelected,
   vehicleSelected,
   currentLevelChanged,
