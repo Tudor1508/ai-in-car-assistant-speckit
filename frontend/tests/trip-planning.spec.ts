@@ -39,36 +39,36 @@ function emailFor(label: string) {
 async function registerAndLogin(page: Page, label: string) {
   const email = emailFor(label);
   await page.goto("/register");
-  await page.getByLabel("Nume complet").fill(accountName);
+  await page.getByLabel("Full name").fill(accountName);
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill(accountPassword);
-  await page.getByLabel(/Confirm/).fill(accountPassword);
-  await page.getByRole("button", { name: /Creează cont/i }).click();
-  await expect(page.getByText(/Contul a fost creat/)).toBeVisible();
-  await page.getByRole("link", { name: "Autentificare" }).click();
+  await page.getByRole("textbox", { name: "Password", exact: true }).fill(accountPassword);
+  await page.getByLabel("Confirm password").fill(accountPassword);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page.getByText(/Your account was created/)).toBeVisible();
+  await page.getByRole("link", { name: "Sign in" }).click();
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel(/^Parol/).fill(accountPassword);
-  await page.getByRole("button", { name: /Autentificare/i }).click();
+  await page.getByRole("textbox", { name: "Password", exact: true }).fill(accountPassword);
+  await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(/\/trip$/);
 }
 
 async function addVehicle(page: Page, suffix: string, range: string, requestedType = vehicleType) {
   await page.goto("/vehicles");
-  await page.getByRole("button", { name: /Adaugă vehicul/i }).first().click();
+  await page.getByRole("button", { name: "Add vehicle" }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Nume vehicul").fill(`${vehicleName} ${suffix}`);
+  await dialog.getByLabel("Vehicle name").fill(`${vehicleName} ${suffix}`);
   await dialog.getByLabel("Model").fill(vehicleModel);
-  await dialog.getByLabel("Tip").click();
-  await page.getByRole("option", { name: requestedType === "electric" ? "Electric" : "Combustie" }).click();
-  await dialog.getByLabel("An").fill(vehicleYear);
-  await dialog.getByLabel("Autonomie (km)").fill(range);
-  await dialog.getByLabel("Kilometraj (km)").fill(vehicleMileage);
+  await dialog.getByLabel("Type", { exact: true }).click();
+  await page.getByRole("option", { name: requestedType === "electric" ? "Electric" : "Combustion" }).click();
+  await dialog.getByLabel("Year").fill(vehicleYear);
+  await dialog.getByLabel("Range (km)").fill(range);
+  await dialog.getByLabel("Mileage (km)").fill(vehicleMileage);
   if (requestedType === "combustion") {
-    const fuelLabels: Record<string, string> = { petrol: "Benzină", diesel: "Diesel", lpg: "GPL", cng: "GNC", other: "Alt tip" };
-    await dialog.getByLabel("Combustibil").click();
+    const fuelLabels: Record<string, string> = { petrol: "Gasoline", diesel: "Diesel", lpg: "LPG", cng: "CNG", other: "Other" };
+    await dialog.getByLabel("Fuel type").click();
     await page.getByRole("option", { name: fuelLabels[fuelType] }).click();
   }
-  await dialog.getByRole("button", { name: "Salvează" }).click();
+  await dialog.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText(`${vehicleName} ${suffix}`)).toBeVisible();
 }
 
@@ -106,11 +106,11 @@ async function prepareScenicFixtureScenario(page: Page, suffix: string, requeste
   await registerAndLogin(page, `scenic-fixture-${suffix}`);
   await addVehicle(page, suffix, "500", requestedType);
   await page.goto("/");
-  await selectPlace(page, "Punct de plecare", "Origin fixture");
+  await selectPlace(page, "Starting point", "Origin fixture");
   await selectPlace(page, "Destinație", "Destination fixture");
-  await page.getByLabel("Vehicul").click();
+  await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
-  await page.getByLabel("Nivel curent procentual").fill("100");
+  await page.getByLabel("Current level percentage").fill("100");
   const previewResponse = page.waitForResponse((response) => response.url().endsWith("/trips/preview"));
   const previewButton = page.getByRole("button", { name: /Genereaz/ });
   await previewButton.click();
@@ -131,15 +131,15 @@ async function previewConfiguredRoute(page: Page, scenario: {
   origin: string; destination: string; range: string; percent: string; vehicleSuffix: string; preference?: "fastest" | "shortest" | "scenic";
 }): Promise<TripRoutePreview | null> {
   await addVehicle(page, scenario.vehicleSuffix, scenario.range);
-  await page.goto("/");
-  await selectPlace(page, "Punct de plecare", scenario.origin);
-  await selectPlace(page, "Destina\u021bie", scenario.destination);
-  await page.getByLabel("Vehicul").click();
+  await page.goto("/trip");
+  await selectPlace(page, "Starting point", scenario.origin);
+  await selectPlace(page, "Destination", scenario.destination);
+  await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
-  await page.getByLabel("Nivel curent procentual").fill(scenario.percent);
+  await page.getByLabel("Current level percentage").fill(scenario.percent);
   const preference = scenario.preference ?? "fastest";
-  const originInput = page.getByLabel("Punct de plecare");
-  const destinationInput = page.getByLabel("Destina\u021bie");
+  const originInput = page.getByLabel("Starting point");
+  const destinationInput = page.getByLabel("Destination");
   const selectedOrigin = await originInput.inputValue();
   const selectedDestination = await destinationInput.inputValue();
   const previewButton = page.getByRole("button", { name: /Genereaz/ });
@@ -178,7 +178,7 @@ test("no-vehicle guidance, unresolved search, permission denial, and responsive 
   await expect(page.getByText(/Adaugă un vehicul în My vehicles/)).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: "My vehicles" })).toBeVisible();
 
-  const origin = page.getByLabel("Punct de plecare");
+  const origin = page.getByLabel("Starting point");
   await origin.fill(unresolvedQuery);
   await expect(page.getByText("Nu am găsit sugestii")).toBeVisible({ timeout: 15000 });
   await expect(origin).toHaveValue(unresolvedQuery);
@@ -204,7 +204,7 @@ test("current location action uses configured browser coordinates after permissi
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: currentLatitude, longitude: currentLongitude });
   await page.getByRole("button", { name: "Folosește locația curentă" }).click();
-  await expect(page.getByLabel("Punct de plecare")).toHaveValue(new RegExp(`Locația mea \\(${currentLatitude.toFixed(4)}`));
+  await expect(page.getByLabel("Starting point")).toHaveValue(new RegExp(`Locația mea \\(${currentLatitude.toFixed(4)}`));
 });
 
 test("range-feasible live route shows map, metrics, and visible attribution", async ({ page }) => {
@@ -214,6 +214,103 @@ test("range-feasible live route shows map, metrics, and visible attribution", as
   await expect(page.getByText("Timp la volan", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Hartă cu traseul planificat")).toBeVisible();
   await expect(page.locator(".leaflet-control-attribution")).toBeVisible();
+});
+
+test("explicit Save trip persists an incomplete preview to Trip History without autosaving", async ({ page }) => {
+  let historySaveRequests = 0;
+  let previewReadsAfterSave = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/trips/history")) historySaveRequests += 1;
+    if (request.url().endsWith("/trips/preview")) previewReadsAfterSave += 1;
+  });
+  const previewFixture = scenicPreviewFixture("fuel", []);
+  previewFixture.feasibility = { status: "incomplete", message: "No compatible station is reachable." };
+  previewFixture.route_options?.forEach((option) => {
+    option.feasibility = { status: "incomplete", message: "No compatible station is reachable." };
+  });
+  await page.route("**/trips/places?*", (route) => {
+    const query = new URL(route.request().url()).searchParams.get("q")?.toLowerCase() ?? "";
+    const isOrigin = query.includes("origin");
+    return route.fulfill({ json: { data: { places: [{ label: isOrigin ? "Origin fixture" : "Destination fixture", latitude: isOrigin ? 46 : 47, longitude: isOrigin ? 23 : 24, provider_id: isOrigin ? "origin-fixture" : "destination-fixture" }] } } });
+  });
+  await page.route("**/trips/preview", (route) => route.fulfill({ json: { data: previewFixture } }));
+  await registerAndLogin(page, "history-save");
+  await addVehicle(page, "history-save", "500");
+  await page.goto("/trip");
+  await selectPlace(page, "Starting point", "Origin fixture");
+  await selectPlace(page, "Destination", "Destination fixture");
+  await page.getByLabel("Vehicle").click();
+  await page.getByRole("option").first().click();
+  await page.getByLabel("Current level percentage").fill("100");
+  await page.getByRole("button", { name: /Genereaz/ }).click();
+  await expect(page.getByRole("button", { name: "Save trip" })).toBeVisible();
+  await expect(page.getByText(/indisponibil|incomplet/i).first()).toBeVisible();
+  expect(historySaveRequests).toBe(0);
+  expect(previewReadsAfterSave).toBe(1);
+
+  const saveResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/trips/history"));
+  await page.getByRole("button", { name: "Save trip" }).click();
+  const saved = await saveResponse;
+  expect(saved.ok(), `Save returned ${saved.status()}: ${await saved.text()}`).toBeTruthy();
+  const savedBody = await saved.json() as { data: { trip: { route: { geometry: unknown }; feasibility: { status: string } } } };
+  expect(savedBody.data.trip.route.geometry).toEqual(previewFixture.route.geometry);
+  expect(savedBody.data.trip.feasibility.status).toBe("incomplete");
+  expect(historySaveRequests).toBe(1);
+
+  const historyResponsePromise = page.waitForResponse((response) => response.url().includes("/trips/history?") && response.request().method() === "GET");
+  await page.goto("/trips");
+  await expect(page.getByRole("heading", { name: /Origin fixture.*Destination fixture/ })).toBeVisible();
+  await expect(page.getByText("This saved route was incomplete when planned.")).toBeVisible();
+  await expect(page.getByLabel(/Route map from Origin fixture to Destination fixture/)).toBeVisible();
+  const historyResponse = await historyResponsePromise;
+  const historyBody = await historyResponse.json() as { data: { trips: Array<{ route: { geometry: unknown }; feasibility: { status: string } }> } };
+  expect(historyBody.data.trips[0].route.geometry).toEqual(previewFixture.route.geometry);
+  expect(historyBody.data.trips[0].feasibility.status).toBe("incomplete");
+  expect(previewReadsAfterSave).toBe(1);
+});
+
+test("explicit Save trip restores the selected complete route from persisted history", async ({ page }) => {
+  let saveCount = 0;
+  let previewCount = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && request.url().endsWith("/trips/history")) saveCount += 1;
+    if (request.url().endsWith("/trips/preview")) previewCount += 1;
+  });
+  const fixture = scenicPreviewFixture("fuel", []);
+  await page.route("**/trips/places?*", (route) => {
+    const isOrigin = (new URL(route.request().url()).searchParams.get("q") ?? "").toLowerCase().includes("origin");
+    return route.fulfill({ json: { data: { places: [{ label: isOrigin ? "Origin fixture" : "Destination fixture", latitude: isOrigin ? 46 : 47, longitude: isOrigin ? 23 : 24, provider_id: isOrigin ? "origin-fixture" : "destination-fixture" }] } } });
+  });
+  await page.route("**/trips/preview", (route) => route.fulfill({ json: { data: fixture } }));
+  await registerAndLogin(page, "history-complete");
+  await addVehicle(page, "history-complete", "500");
+  await page.goto("/trip");
+  await selectPlace(page, "Starting point", "Origin fixture");
+  await selectPlace(page, "Destination", "Destination fixture");
+  await page.getByLabel("Vehicle").click();
+  await page.getByRole("option").first().click();
+  await page.getByLabel("Current level percentage").fill("100");
+  await page.getByRole("button", { name: /Genereaz/ }).click();
+  await expect(page.getByRole("button", { name: "Save trip" })).toBeVisible();
+  expect(saveCount).toBe(0);
+
+  const saveResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().endsWith("/trips/history"));
+  await page.getByRole("button", { name: "Save trip" }).click();
+  const saveResponse = await saveResponsePromise;
+  expect(saveResponse.ok(), `Save returned ${saveResponse.status()}: ${await saveResponse.text()}`).toBeTruthy();
+  const saved = await saveResponse.json() as { data: { trip: { route: { geometry: unknown }; feasibility: { status: string } } } };
+  expect(saved.data.trip.route.geometry).toEqual(fixture.route.geometry);
+  expect(saved.data.trip.feasibility.status).toBe("complete");
+  expect(saveCount).toBe(1);
+
+  const historyResponsePromise = page.waitForResponse((response) => response.url().includes("/trips/history?") && response.request().method() === "GET");
+  await page.goto("/trips");
+  const historyResponse = await historyResponsePromise;
+  const history = await historyResponse.json() as { data: { trips: Array<{ route: { geometry: unknown }; feasibility: { status: string } }> } };
+  expect(history.data.trips[0].route.geometry).toEqual(fixture.route.geometry);
+  expect(history.data.trips[0].feasibility.status).toBe("complete");
+  await expect(page.getByLabel(/Route map from Origin fixture to Destination fixture/)).toBeVisible();
+  expect(previewCount).toBe(1);
 });
 
 test("configured route needing stops lists real stations and per-leg distances", async ({ page }) => {

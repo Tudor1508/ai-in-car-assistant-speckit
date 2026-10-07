@@ -16,6 +16,15 @@ export type FavoriteRoute = {
 };
 
 export type RoutePreference = "fastest" | "shortest" | "scenic";
+export type TripHistoryItem = {
+  id: string; origin: PlaceSelection; destination: PlaceSelection; created_at: string;
+  route_preference: RoutePreference;
+  vehicle: TripRoutePreview["vehicle"] & { name: string; model: string; type: "combustion" | "electric" };
+  route: TripRoutePreview["route"]; feasibility: RouteFeasibility; legs: TripRoutePreview["legs"];
+  stops: RouteStop[]; attractions: TouristAttraction[]; restaurants: RouteRestaurant[];
+};
+export type TripHistorySummary = { total_trips: number; total_distance_m: number; total_duration_s: number };
+export type TripHistoryPagination = { page: number; page_size: number; total: number; total_pages: number };
 export type RouteLabel = RoutePreference;
 export type TouristAttraction = { source_id: string | null; name: string | null; category: "attraction" | "viewpoint"; latitude: number; longitude: number; sequence: number; route_progress_m: number };
 export type RouteRestaurant = { source_id: string | null; name: string | null; category: "restaurant"; latitude: number; longitude: number; sequence: number; route_progress_m: number };
@@ -62,6 +71,14 @@ type TripsState = {
   favoriteSaveError: string | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  historyItems: TripHistoryItem[];
+  historySummary: TripHistorySummary;
+  historyPagination: TripHistoryPagination;
+  historySort: "desc" | "asc";
+  historyStatus: "idle" | "loading" | "succeeded" | "failed";
+  historyError: string | null;
+  historySaveStatus: "idle" | "loading" | "succeeded" | "failed";
+  historySaveError: string | null;
 };
 
 const initialState: TripsState = {
@@ -78,6 +95,9 @@ const initialState: TripsState = {
   favoriteSaveError: null,
   status: "idle",
   error: null,
+  historyItems: [], historySummary: { total_trips: 0, total_distance_m: 0, total_duration_s: 0 },
+  historyPagination: { page: 1, page_size: 10, total: 0, total_pages: 0 }, historySort: "desc",
+  historyStatus: "idle", historyError: null, historySaveStatus: "idle", historySaveError: null,
 };
 
 const tripsSlice = createSlice({
@@ -159,6 +179,17 @@ const tripsSlice = createSlice({
       state.destination = action.payload.destination;
       state.preview = null;
     },
+    historyLoading(state) { state.historyStatus = "loading"; state.historyError = null; },
+    historyLoaded(state, action: PayloadAction<{ trips: TripHistoryItem[]; summary: TripHistorySummary; pagination: TripHistoryPagination }>) {
+      state.historyItems = action.payload.trips; state.historySummary = action.payload.summary;
+      state.historyPagination = action.payload.pagination; state.historyStatus = "succeeded"; state.historyError = null;
+    },
+    historyFailed(state, action: PayloadAction<string>) { state.historyStatus = "failed"; state.historyError = action.payload; },
+    historySortChanged(state, action: PayloadAction<"desc" | "asc">) { state.historySort = action.payload; state.historyPagination.page = 1; state.historyStatus = "loading"; },
+    historyPageChanged(state, action: PayloadAction<number>) { state.historyPagination.page = action.payload; state.historyStatus = "loading"; },
+    historySaving(state) { state.historySaveStatus = "loading"; state.historySaveError = null; },
+    historySaved(state) { state.historySaveStatus = "succeeded"; state.historySaveError = null; },
+    historySaveFailed(state, action: PayloadAction<string>) { state.historySaveStatus = "failed"; state.historySaveError = action.payload; },
   },
   extraReducers(builder) {
     builder.addCase(authCleared, () => initialState);
@@ -181,6 +212,8 @@ export const {
   favoriteSaveFailed,
   favoriteSaved,
   favoriteSelected,
+  historyLoading, historyLoaded, historyFailed, historySortChanged, historyPageChanged,
+  historySaving, historySaved, historySaveFailed,
 } = tripsSlice.actions;
 
 export default tripsSlice.reducer;
