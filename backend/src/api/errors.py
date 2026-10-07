@@ -53,6 +53,12 @@ def install_error_handlers(app: FastAPI) -> None:
             "route_not_found": "No drivable route could be calculated",
             "routing_provider_unavailable": "Route data is temporarily unavailable",
             "route_preference_unavailable": "Scenic recommendations are unavailable for this route. Choose Fastest or Shortest.",
+            "assistant_unavailable": "The travel assistant is temporarily unavailable",
+            "speech_language_unsupported": "Speech playback is unavailable for this language",
+            "audio_format_unsupported": "This recording format is not supported",
+            "audio_too_large": "The recording is too large to transcribe",
+            "audio_invalid": "The recording could not be read",
+            "transcription_unavailable": "Speech transcription is temporarily unavailable",
         }
         detail = exc.detail if isinstance(exc.detail, str) else ""
         details = None

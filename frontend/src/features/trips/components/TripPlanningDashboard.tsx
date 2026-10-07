@@ -25,6 +25,7 @@ import { PlaceAutocomplete } from "./PlaceAutocomplete";
 import { VehicleRangeControl } from "./VehicleRangeControl";
 import { RouteSummary } from "./RouteSummary";
 import { FavoriteRoutes } from "./FavoriteRoutes";
+import { TravelConcierge } from "@/features/concierge/components/TravelConcierge";
 
 const RouteMap = dynamic(() => import("./RouteMap"), {
   ssr: false,
@@ -137,6 +138,7 @@ export function TripPlanningDashboard() {
       </Box>
     ) :
     <Box component="main" sx={{ minHeight: "calc(100vh - 64px)", bgcolor: "#081523", color: "white", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
+      <TravelConcierge />
       <Box sx={{ maxWidth: 1240, mx: "auto" }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="overline" sx={{ color: "#58dced", letterSpacing: 2 }}>TRIP PLANNER</Typography>
