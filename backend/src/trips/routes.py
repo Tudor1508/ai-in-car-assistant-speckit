@@ -19,12 +19,14 @@ from src.trips.schemas import (
 	PlaceCollection,
 	TripPreviewRequest,
 	TripPreviewResponse,
+	TripHistoryCreate, TripHistoryCreated, TripHistoryCollection,
 )
 from src.trips.service import (
 	list_favorite_routes,
 	preview_owned_trip,
 	save_favorite_route,
 	search_places,
+	save_trip_history, list_trip_history,
 )
 from src.trips.settings import TripConfigurationError, TripSettings
 
@@ -33,6 +35,29 @@ trip_errors = common_error_responses() | {
 	502: {"model": ErrorEnvelope, "description": "The route provider is unavailable"},
 	503: {"model": ErrorEnvelope, "description": "The route provider is not configured"},
 }
+
+
+@router.post("/history", response_model=SuccessEnvelope[TripHistoryCreated], status_code=201, responses=common_error_responses())
+def post_trip_history(
+	body: TripHistoryCreate,
+	db: Session = Depends(get_db),
+	account: Account = Depends(require_account),
+	_csrf=Depends(require_csrf),
+):
+	trip = save_trip_history(db, account.id, body)
+	return success_envelope({"trip": trip.model_dump(mode="json")})
+
+
+@router.get("/history", response_model=SuccessEnvelope[TripHistoryCollection], responses=common_error_responses())
+def get_trip_history(
+	page: Annotated[int, Query(ge=1)] = 1,
+	page_size: Annotated[int, Query(ge=1, le=10)] = 10,
+	sort_order: Annotated[str, Query(pattern="^(asc|desc)$")] = "desc",
+	db: Session = Depends(get_db),
+	account: Account = Depends(require_account),
+):
+	result = list_trip_history(db, account.id, page, page_size, sort_order)
+	return success_envelope(result.model_dump(mode="json"))
 
 
 def required_trip_settings() -> TripSettings:

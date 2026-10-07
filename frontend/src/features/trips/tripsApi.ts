@@ -4,11 +4,29 @@ import type {
   PlaceSelection,
   TripRoutePreview,
   RoutePreference,
+  TripHistoryItem,
+  TripHistorySummary,
+  TripHistoryPagination,
 } from "./tripsSlice";
 
 export type PlaceSearchResult = { places: PlaceSelection[] };
 export type FavoriteListResult = { favorites: FavoriteRoute[] };
 export type FavoriteSaveResult = { favorite: FavoriteRoute };
+export type TripHistoryResult = { trips: TripHistoryItem[]; summary: TripHistorySummary; pagination: TripHistoryPagination };
+
+export function listTripHistory(page = 1, pageSize = 10, sortOrder: "desc" | "asc" = "desc"): Promise<TripHistoryResult> {
+  const query = new URLSearchParams({ page: String(page), page_size: String(pageSize), sort_order: sortOrder });
+  return apiRequest<TripHistoryResult>(`/trips/history?${query.toString()}`);
+}
+
+export function saveTripHistory(payload: {
+  origin: PlaceSelection; destination: PlaceSelection; vehicle_id: string; current_level_percent: number;
+  route_preference: RoutePreference; route: TripRoutePreview["route"]; feasibility: TripRoutePreview["feasibility"];
+  legs: TripRoutePreview["legs"]; stops: TripRoutePreview["stops"];
+  attractions: NonNullable<TripRoutePreview["attractions"]>; restaurants: NonNullable<TripRoutePreview["restaurants"]>;
+}): Promise<{ trip: TripHistoryItem }> {
+  return apiRequest<{ trip: TripHistoryItem }>("/trips/history", "POST", payload);
+}
 
 type TripPreviewPayload = {
   origin: PlaceSelection;

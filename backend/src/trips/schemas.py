@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import math
 from datetime import datetime
+from typing import Literal
 from typing import Literal
 
 from pydantic import (
@@ -255,3 +258,175 @@ class FavoriteCollection(BaseModel):
 
 class FavoriteItem(BaseModel):
     favorite: FavoriteRoute
+
+
+class HistoryPlace(PlaceSelection):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+
+class HistoryRouteGeometry(RouteGeometry):
+    model_config = ConfigDict(extra="forbid")
+
+
+class HistoryRouteMetrics(RouteMetrics):
+    model_config = ConfigDict(extra="forbid")
+    geometry: HistoryRouteGeometry
+
+    @field_validator("distance_m", "duration_s")
+    @classmethod
+    def validate_metrics(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Route metrics must be finite and non-negative")
+        return value
+
+
+class HistoryFeasibility(RouteFeasibility):
+    model_config = ConfigDict(extra="forbid")
+    first_unreachable_stop: HistoryRouteStop | None = None
+
+    @field_validator("next_station_distance_km", "additional_range_km")
+    @classmethod
+    def validate_ranges(cls, value: float | None) -> float | None:
+        if value is not None and (not math.isfinite(value) or value < 0):
+            raise ValueError("Range values must be finite and non-negative")
+        return value
+
+
+class HistoryRouteLeg(RouteLeg):
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("distance_m", "duration_s")
+    @classmethod
+    def validate_metrics(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Leg metrics must be finite and non-negative")
+        return value
+
+
+class HistoryRouteStop(RouteStop):
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("leg_distance_m", "route_progress_m")
+    @classmethod
+    def validate_metrics(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Stop metrics must be finite and non-negative")
+        return value
+
+
+class HistoryAttraction(TouristAttraction):
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("latitude")
+    @classmethod
+    def validate_latitude(cls, value: float) -> float:
+        if not math.isfinite(value) or not -90 <= value <= 90:
+            raise ValueError("Latitude must be a finite WGS84 coordinate")
+        return value
+
+    @field_validator("longitude")
+    @classmethod
+    def validate_longitude(cls, value: float) -> float:
+        if not math.isfinite(value) or not -180 <= value <= 180:
+            raise ValueError("Longitude must be a finite WGS84 coordinate")
+        return value
+
+    @field_validator("route_progress_m")
+    @classmethod
+    def validate_route_progress(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Route progress must be finite and non-negative")
+        return value
+
+
+class HistoryRestaurant(RouteRestaurant):
+    model_config = ConfigDict(extra="forbid")
+
+    @field_validator("latitude")
+    @classmethod
+    def validate_latitude(cls, value: float) -> float:
+        if not math.isfinite(value) or not -90 <= value <= 90:
+            raise ValueError("Latitude must be a finite WGS84 coordinate")
+        return value
+
+    @field_validator("longitude")
+    @classmethod
+    def validate_longitude(cls, value: float) -> float:
+        if not math.isfinite(value) or not -180 <= value <= 180:
+            raise ValueError("Longitude must be a finite WGS84 coordinate")
+        return value
+
+    @field_validator("route_progress_m")
+    @classmethod
+    def validate_route_progress(cls, value: float) -> float:
+        if not math.isfinite(value) or value < 0:
+            raise ValueError("Route progress must be finite and non-negative")
+        return value
+
+
+class TripHistoryCreate(StrictRequest):
+    origin: HistoryPlace
+    destination: HistoryPlace
+    vehicle_id: str = Field(pattern=r"^[0-9a-f]{32}$")
+    current_level_percent: StrictInt = Field(ge=0, le=100)
+    route_preference: Literal["fastest", "shortest", "scenic"]
+    route: HistoryRouteMetrics
+    feasibility: HistoryFeasibility
+    legs: list[HistoryRouteLeg]
+    stops: list[HistoryRouteStop]
+    attractions: list[HistoryAttraction] = Field(default_factory=list)
+    restaurants: list[HistoryRestaurant] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def endpoints_must_differ(self):
+        if (self.origin.latitude, self.origin.longitude) == (self.destination.latitude, self.destination.longitude):
+            raise ValueError("Origin and destination must be different places")
+        return self
+
+
+class HistoryVehicle(BaseModel):
+    id: str
+    name: str
+    model: str
+    type: Literal["combustion", "electric"]
+    current_level_percent: int
+    available_range_km: float
+    maximum_range_km: int
+
+
+class TripHistoryItem(BaseModel):
+    id: str
+    origin: HistoryPlace
+    destination: HistoryPlace
+    created_at: datetime
+    route_preference: Literal["fastest", "shortest", "scenic"]
+    vehicle: HistoryVehicle
+    route: HistoryRouteMetrics
+    feasibility: HistoryFeasibility
+    legs: list[HistoryRouteLeg]
+    stops: list[HistoryRouteStop]
+    attractions: list[HistoryAttraction]
+    restaurants: list[HistoryRestaurant]
+
+
+class TripHistorySummary(BaseModel):
+    total_trips: int
+    total_distance_m: float
+    total_duration_s: float
+
+
+class TripHistoryPagination(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class TripHistoryCollection(BaseModel):
+    trips: list[TripHistoryItem]
+    summary: TripHistorySummary
+    pagination: TripHistoryPagination
+
+
+class TripHistoryCreated(BaseModel):
+    trip: TripHistoryItem

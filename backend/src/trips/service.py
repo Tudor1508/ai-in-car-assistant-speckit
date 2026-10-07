@@ -3,12 +3,13 @@ from decimal import Decimal, ROUND_HALF_UP
 from concurrent.futures import ThreadPoolExecutor
 import math
 import secrets
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src.data.models.account import Account
 from src.data.models.trip_favorite import TripFavorite
+from src.data.models.trip_history import TripHistory
 from src.trips.provider import (
     ORSProvider,
     ORSProviderUnavailable,
@@ -33,9 +34,80 @@ from src.trips.schemas import (
     TripRouteChoice,
     TripRouteOption,
     VehicleRangeSummary,
+    TripHistoryCreate,
+    TripHistoryItem,
+    TripHistoryCollection,
+    TripHistorySummary,
+    TripHistoryPagination,
 )
 from src.trips.settings import TripConfigurationError, TripSettings
 from src.vehicles.service import get_owned_vehicle
+
+
+def _history_item(row: TripHistory) -> TripHistoryItem:
+    from datetime import timezone
+    created_at = row.created_at
+    if created_at.tzinfo is None:
+        created_at = created_at.replace(tzinfo=timezone.utc)
+    snapshot = row.route_snapshot
+    return TripHistoryItem.model_validate({
+        "id": row.id,
+        "origin": {"label": row.origin_label, "latitude": float(row.origin_latitude), "longitude": float(row.origin_longitude)},
+        "destination": {"label": row.destination_label, "latitude": float(row.destination_latitude), "longitude": float(row.destination_longitude)},
+        "created_at": created_at,
+        "route_preference": row.route_preference,
+        "vehicle": row.vehicle_snapshot,
+        "route": {"geometry": snapshot["route"]["geometry"], "distance_m": float(row.distance_m), "duration_s": float(row.duration_s)},
+        "feasibility": snapshot["feasibility"], "legs": snapshot["legs"], "stops": snapshot["stops"],
+        "attractions": snapshot["attractions"], "restaurants": snapshot["restaurants"],
+    })
+
+
+def save_trip_history(db: Session, owner_id: str, request: TripHistoryCreate) -> TripHistoryItem:
+    vehicle = get_owned_vehicle(db, owner_id, request.vehicle_id)
+    origin_latitude = _coordinate_6(request.origin.latitude)
+    origin_longitude = _coordinate_6(request.origin.longitude)
+    destination_latitude = _coordinate_6(request.destination.latitude)
+    destination_longitude = _coordinate_6(request.destination.longitude)
+    snapshot = {
+        "route": request.route.model_dump(mode="json"),
+        "feasibility": request.feasibility.model_dump(mode="json"),
+        "legs": [item.model_dump(mode="json") for item in request.legs],
+        "stops": [item.model_dump(mode="json") for item in request.stops],
+        "attractions": [item.model_dump(mode="json") for item in request.attractions],
+        "restaurants": [item.model_dump(mode="json") for item in request.restaurants],
+    }
+    row = TripHistory(
+        id=secrets.token_hex(16), owner_account_id=owner_id,
+        origin_label=request.origin.label, origin_latitude=origin_latitude, origin_longitude=origin_longitude,
+        destination_label=request.destination.label, destination_latitude=destination_latitude, destination_longitude=destination_longitude,
+        vehicle_id=vehicle.id,
+        vehicle_snapshot={"id": vehicle.id, "name": vehicle.name, "model": vehicle.model, "type": vehicle.type,
+            "current_level_percent": request.current_level_percent,
+            "available_range_km": vehicle.range_km * request.current_level_percent / 100,
+            "maximum_range_km": vehicle.range_km},
+        route_preference=request.route_preference, distance_m=request.route.distance_m,
+        duration_s=request.route.duration_s, route_snapshot=snapshot,
+    )
+    db.add(row)
+    db.flush()
+    return _history_item(row)
+
+
+def list_trip_history(db: Session, owner_id: str, page: int, page_size: int, sort_order: str) -> TripHistoryCollection:
+    owner_filter = TripHistory.owner_account_id == owner_id
+    total = db.scalar(select(func.count()).select_from(TripHistory).where(owner_filter)) or 0
+    aggregate = db.execute(select(
+        func.coalesce(func.sum(TripHistory.distance_m), 0),
+        func.coalesce(func.sum(TripHistory.duration_s), 0),
+    ).where(owner_filter)).one()
+    order_time = TripHistory.created_at.desc() if sort_order == "desc" else TripHistory.created_at.asc()
+    rows = db.scalars(select(TripHistory).where(owner_filter).order_by(order_time, TripHistory.id.asc()).offset((page - 1) * page_size).limit(page_size)).all()
+    return TripHistoryCollection(
+        trips=[_history_item(row) for row in rows],
+        summary=TripHistorySummary(total_trips=total, total_distance_m=float(aggregate[0]), total_duration_s=float(aggregate[1])),
+        pagination=TripHistoryPagination(page=page, page_size=page_size, total=total, total_pages=(total + page_size - 1) // page_size),
+    )
 
 
 def _coordinate_6(value: float) -> Decimal:

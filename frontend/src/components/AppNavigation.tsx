@@ -12,6 +12,7 @@ import { setCsrfToken } from "@/lib/api/client";
 
 const links = [
   { href: "/trip", label: "Plan a trip" },
+  { href: "/trips", label: "Trip history" },
   { href: "/vehicles", label: "My vehicles" },
   { href: "/profile", label: "Profile" },
 ];
@@ -43,7 +44,7 @@ export function AppNavigation() {
         <Typography component={Link} href="/trip" sx={{ color: "white", textDecoration: "none", fontWeight: 800, mr: { xs: "auto", md: 3 } }}>
           <Box component="span" sx={{ color: "#58dced", mr: 1 }}>◉</Box> drivewise.
         </Typography>
-        <Stack component="nav" aria-label="Main navigation" direction="row" sx={{ order: { xs: 3, md: 2 }, gap: { xs: 0, sm: 0.5 }, flex: { xs: "1 0 100%", md: "0 1 auto" }, justifyContent: { xs: "center", md: "flex-start" } }}>
+        <Stack component="nav" aria-label="Main navigation" direction="row" sx={{ order: { xs: 3, md: 2 }, gap: { xs: 0, sm: 0.5 }, flex: { xs: "1 1 100%", md: "0 1 auto" }, width: { xs: "100%", md: "auto" }, maxWidth: "100%", minWidth: 0, boxSizing: "border-box", overflowX: { xs: "auto", md: "visible" }, justifyContent: { xs: "center", md: "flex-start" } }}>
           {links.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
