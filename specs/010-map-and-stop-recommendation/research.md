@@ -43,13 +43,13 @@ The user approved reducing the OpenPOI buffer for Scenic tourism queries only so
 3. Candidate route geometries must be distinct enough to compare. Identical candidate geometries are not separate Scenic choices. Do not relabel a single Fastest or Shortest geometry as Scenic when no distinct comparison exists.
 4. Query the existing OpenPOIService with the combined confirmed category IDs and each candidate's full geometry, subject to ORS limits and project corridor/result limit. Any inability to compare candidates completely is a Scenic-unavailable outcome, not a reason to silently select a fallback.
 5. Apply the existing 007 energy-stop/range behavior to each route option returned to the user. Each option carries its own route geometry, metrics, legs, feasibility, energy stops, and Scenic attraction list so switching tied options cannot mix route data.
-6. Count/category scoring is only for route selection. Attraction POIs are not included in energy-stop count or feasibility. The attraction list is ordered by progress along that option's displayed route; it has no fixed time/distance interval.
+6. Count/category scoring uses the full returned POI set for route selection. Displayed attractions are not included in energy-stop count or feasibility. The Scenic list is ordered by route progress, with at most one item per 100 km route section, excluding the first 10 km and recommendations within 10 km of energy stops or one another.
 
 ## Alternatives explicitly not selected
 
 - Route-segment composition or segmented POI queries to bypass public endpoint limits: not approved and not part of 010.
 - Any new routing, map, POI, or data provider: not approved.
-- A scenery heuristic, OSM-tag inference beyond categories 622/627, attraction rating/description, route detour to an attraction, or fixed attraction interval: not approved.
+- A scenery heuristic, OSM-tag inference beyond categories 622/627, attraction rating/description, or route detour to an attraction: not approved. The explicit 100 km display sampling rule is recorded in the feature specification.
 - Treating Fastest or Shortest as Scenic without a distinct, comparable candidate set: not approved.
 
 ## References

@@ -37,18 +37,24 @@ export function TripPlanningDashboard() {
   const vehicles = useSelector((state: RootState) => state.vehicles);
   const [vehicleLoadMessage, setVehicleLoadMessage] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(true);
+  const [selectedPreference, setSelectedPreference] = useState<TripRouteChoice["preference"]>("fastest");
   const [originText, setOriginText] = useState("");
   const [destinationText, setDestinationText] = useState("");
   const selectedVehicle = useMemo(() => vehicles.items.find((item) => item.id === trip.vehicleId), [vehicles.items, trip.vehicleId]);
-  const selectedOption = trip.preview?.route_options?.find((option) => option.id === trip.selectedRouteOptionId);
-  const displayedPreview = selectedOption ? { ...trip.preview!, ...selectedOption } : trip.preview;
-  const routeGroups = (trip.preview?.route_choices ?? []).reduce<Array<{ option: TripRouteOption; choices: TripRouteChoice[] }>>((groups, choice) => {
+  const selectedChoice = trip.preview?.route_choices?.find((choice) => choice.preference === selectedPreference && choice.status === "available");
+  const selectedOption = trip.preview?.route_options?.find((option) => option.id === (selectedChoice?.route_option_id ?? trip.selectedRouteOptionId));
+  const displayedPreview = selectedOption ? {
+    ...trip.preview!,
+    ...selectedOption,
+    route_labels: [selectedPreference],
+    attractions: selectedPreference === "scenic" ? selectedOption.attractions : [],
+    restaurants: selectedPreference === "scenic" ? selectedOption.restaurants : [],
+  } : trip.preview;
+  const routeGroups = (trip.preview?.route_choices ?? []).reduce<Array<{ option: TripRouteOption; choices: [TripRouteChoice] }>>((groups, choice) => {
     if (choice.status !== "available" || !choice.route_option_id) return groups;
     const option = trip.preview?.route_options?.find((candidate) => candidate.id === choice.route_option_id);
     if (!option) return groups;
-    const existing = groups.find((group) => group.option.id === option.id);
-    if (existing) existing.choices.push(choice);
-    else groups.push({ option, choices: [choice] });
+    groups.push({ option, choices: [choice] });
     return groups;
   }, []);
   const unavailableChoices = (trip.preview?.route_choices ?? []).filter((choice) => choice.status === "unavailable");
@@ -96,6 +102,7 @@ export function TripPlanningDashboard() {
         current_level_percent: trip.currentLevelPercent,
         route_preference: "all",
       });
+      setSelectedPreference("fastest");
       dispatch(tripPreviewLoaded(result));
     } catch (cause) {
       if (cause instanceof ApiClientError && cause.code === "authentication_required") {
@@ -158,7 +165,8 @@ export function TripPlanningDashboard() {
                         const scenicChoice = choices.find((choice) => choice.preference === "scenic");
                         const routeIncomplete = option.feasibility.status === "incomplete";
                         const warningYellow = "#facc15";
-                        return <Button key={option.id} variant={trip.selectedRouteOptionId === option.id ? "contained" : "outlined"} aria-pressed={trip.selectedRouteOptionId === option.id} onClick={() => dispatch(routeOptionSelected(option.id))} sx={{ minHeight: 104, display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", textTransform: "none", p: 1.75, borderColor: routeIncomplete ? warningYellow : "#58dced", ...(routeIncomplete && trip.selectedRouteOptionId === option.id ? { bgcolor: warningYellow, color: "#17202a", "&:hover": { bgcolor: "#eab308" } } : {}), ...(routeIncomplete && trip.selectedRouteOptionId !== option.id ? { color: warningYellow, "&:hover": { borderColor: warningYellow, bgcolor: "#332b0d" } } : {}) }}>
+                        const isSelected = selectedPreference === choices[0].preference && trip.selectedRouteOptionId === option.id;
+                        return <Button key={`${choices[0].preference}:${option.id}`} variant={isSelected ? "contained" : "outlined"} aria-pressed={isSelected} onClick={() => { setSelectedPreference(choices[0].preference); dispatch(routeOptionSelected(option.id)); }} sx={{ minHeight: 104, display: "flex", flexDirection: "column", alignItems: "flex-start", textAlign: "left", textTransform: "none", p: 1.75, borderColor: routeIncomplete ? warningYellow : "#58dced", ...(routeIncomplete && isSelected ? { bgcolor: warningYellow, color: "#17202a", "&:hover": { bgcolor: "#eab308" } } : {}), ...(routeIncomplete && !isSelected ? { color: warningYellow, "&:hover": { borderColor: warningYellow, bgcolor: "#332b0d" } } : {}) }}>
                         <Typography component="span" sx={{ fontWeight: 800 }}>{choices.map((choice) => routeName(choice.preference)).join(" · ")}</Typography>
                         <Typography component="span" variant="body2">{(option.route.distance_m / 1000).toLocaleString("ro-RO", { maximumFractionDigits: 1 })} km · {Math.round(option.route.duration_s / 60)} min</Typography>
                         {scenicChoice && (

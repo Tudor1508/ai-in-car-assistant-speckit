@@ -49,7 +49,7 @@ The existing input validation and vehicle/range derivation described in the 007 
 
 ### Successful response when `route_preference` is provided
 
-The existing top-level 007 `feasibility`, `vehicle`, `route`, `legs`, and `stops` fields remain present as a compatibility projection of `selected_route_option_id`. The extension adds the preference identity, selected option, candidate options, and `attractions` for that selected option. For `all`, the selected option initially is Fastest. `route_choices` maps Fastest, Shortest, and Scenic to an available option ID or an unavailable reason. Duplicate geometries share one option ID and are represented by `route_labels` on the option. The UI switches choices locally without another preview request.
+The existing top-level 007 `feasibility`, `vehicle`, `route`, `legs`, and `stops` fields remain present as a compatibility projection of `selected_route_option_id`. The extension adds the preference identity, selected option, candidate options, and `attractions` for that selected option. For `all`, the selected option initially is Fastest. `route_choices` maps Fastest, Shortest, and Scenic to three distinct option IDs. Keep separate option objects even when their geometries match; the UI switches choices locally without another preview request.
 
 ```json
 {
@@ -150,7 +150,8 @@ The example's names, identifiers, coordinates, and metrics are illustrative sche
 - One option for Fastest or Shortest.
 - For Scenic, all distinct candidates tied at the greatest distinct returned POI-feature count. `attraction_count` is the count used for that comparison. Distinct source feature IDs are counted once; where no source ID is supplied, each returned feature is treated as its own feature. No name/proximity-based deduplication is performed.
 - A request-scoped opaque `id`; IDs are not stable across previews and must not be persisted or used as historical identifiers.
-- For `all`, at most three canonical route geometries are returned. `route_labels` identifies which of Fastest, Shortest, and Scenic each option represents. ORS alternatives used to score Scenic are not exposed as separate choices.
+- For `all`, exactly three canonical route options are returned with unique IDs and one `route_labels` value each: Fastest, Shortest, and Scenic. Keep options separate even when geometries match. ORS alternatives used to score Scenic are not exposed as separate choices.
+- Scenic display recommendations include at most one attraction per 100 km route section, omit attractions within the first 10 km, and omit recommendations within 10 km of mandatory energy stops or one another. `attraction_count` reports this displayed, filtered recommendation count; candidate scoring uses the distinct source POI count before display filtering.
 
 For route options, `route`, `legs`, and `stops` follow 007 meanings. The route geometry and distance/duration include any 007 energy-stop routing behavior for that option. `attractions` remain a separate recommendation collection; they do not alter geometry or feasibility and are excluded from `stops` and energy-stop counts. The response's `duration_s` is estimated driving time and excludes stop dwell time.
 

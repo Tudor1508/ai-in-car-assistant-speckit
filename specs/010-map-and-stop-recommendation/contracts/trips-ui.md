@@ -9,7 +9,7 @@ All trip data shared by the planner, map, option selector, and summary belongs i
 ## Route generation and canonical choices
 
 - Do not ask the user to choose a preference before requesting routes. The single **Generează rutele** action requests canonical Fastest, Shortest, and Scenic choices together.
-- Show available results as accessible selectable cards labelled **Fastest**, **Shortest**, and **Scenic**. If two labels resolve to one geometry, show one card with both labels. Never show numbered ORS candidates.
+- Show three accessible, separately selectable cards labelled **Fastest**, **Shortest**, and **Scenic**, including when two or more choices have the same geometry. Never show numbered ORS candidates.
 - ORS alternatives may be used internally to identify the Scenic candidate, but only canonical choices are user-visible. If multiple candidates tie for the highest attraction count, use the quickest tied candidate as the single Scenic choice.
 - While generation is pending, expose a visible and screen-reader-announced busy state, prevent duplicate submission, and preserve all inputs.
 - Selecting a generated card is local and does not call the provider again. Starting a new generation exposes a visible and screen-reader-announced busy state, prevents duplicate submission, and preserves inputs.
@@ -29,7 +29,7 @@ All trip data shared by the planner, map, option selector, and summary belongs i
 - Show the selected route option's geometry, origin, destination, and 007-compatible energy-stop markers. Show tourist POIs with a distinguishable marker style and accessible marker text. Tourist markers are informational and never appear in the energy-stop count.
 - Show attractions in a dedicated list separate from fuel/charging stops. List order follows route progress from origin to destination. Display only source-provided name, category, and location; omit absent optional detail. Do not invent descriptions, ratings, opening hours, availability, or visit status.
 - Show route-relative progress as distance along the selected route from its origin when available. Explain that attractions are recommendations beside/along the route and are not mandatory waypoints or detours. Do not state that the user must stop at them or has visited them.
-- Do not show a fixed driving-time or distance interval between attractions. Do not space, filter, or sample attraction markers/list items based on an interval.
+- Keep the Scenic attraction list concise: show at most one attraction per 100 km section of route, skip the first 10 km, and leave at least 10 km between recommendations and mandatory energy stops or other attractions.
 - Switching Scenic candidate options updates geometry, metrics, feasibility, energy stops, attraction markers, and attraction order together. The map and both lists must never combine different option results.
 
 ## States and recovery

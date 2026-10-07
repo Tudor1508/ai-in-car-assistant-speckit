@@ -313,11 +313,11 @@ def preview_owned_trip(
 
         scenic_geometry = candidate_groups[scenic_key]["route"].geometry if scenic_key is not None else None
         scenic_route_length_m = _route_geometry_length_m(scenic_geometry) if scenic_geometry is not None else 0
-        # Attractions are informational POIs: preserve every source result and
-        # only order them along the route. Do not sample them by a fixed interval.
-        scenic_attractions = sorted(
+        scenic_attractions = _select_recommendations_by_route_sections(
             attractions_by_key.get(scenic_key, []) if scenic_key is not None else [],
-            key=lambda item: float(item.get("route_progress_m", 0) or 0),
+            section_length_m=100_000,
+            route_length_m=scenic_route_length_m,
+            maximum_count=math.ceil(scenic_route_length_m / 100_000),
         )
         scenic_restaurants: list[dict] = []
         if scenic_key is not None:
@@ -353,15 +353,14 @@ def preview_owned_trip(
                 )
             planned = planned_by_key[key]
             is_scenic = preference == "scenic"
-            _, option_restaurants = (
+            option_attractions, option_restaurants = (
                 _keep_recommendations_clear_of_stops(
-                    [],
+                    scenic_attractions,
                     scenic_restaurants,
                     planned.stops + ([planned.feasibility.first_unreachable_stop] if planned.feasibility.first_unreachable_stop else []),
                 )
                 if is_scenic else ([], [])
             )
-            option_attractions = scenic_attractions if is_scenic else []
             option = {
                 "id": f"route-option-{index}",
                 "attraction_count": len(option_attractions),
@@ -381,30 +380,6 @@ def preview_owned_trip(
                 ] if is_scenic else [],
             }
             options_by_preference[preference] = option
-
-        # A canonical choice is a distinct route geometry. When preferences
-        # resolve to the same geometry, expose one option and combine labels.
-        options_by_geometry: dict[tuple, dict] = {}
-        merged_by_preference: dict[str, dict] = {}
-        for preference in ("fastest", "shortest", "scenic"):
-            option = options_by_preference.get(preference)
-            if option is None:
-                continue
-            geometry_key = tuple(tuple(point) for point in option["route"].geometry.coordinates)
-            existing = options_by_geometry.get(geometry_key)
-            if existing is None:
-                options_by_geometry[geometry_key] = option
-                existing = option
-            else:
-                labels = list(dict.fromkeys([*existing["route_labels"], preference]))
-                if preference == "scenic":
-                    option = {**option, "id": existing["id"], "route_labels": labels}
-                    options_by_geometry[geometry_key] = option
-                    existing = option
-                else:
-                    existing["route_labels"] = labels
-            merged_by_preference[preference] = existing
-        options_by_preference = merged_by_preference
 
         route_choices = [
             TripRouteChoice(
@@ -426,7 +401,7 @@ def preview_owned_trip(
             selected_route_option_id=first["id"],
             route_options=[
                 TripRouteOption.model_validate(option)
-                for option in options_by_geometry.values()
+                for option in options_by_preference.values()
             ],
             route_choices=route_choices,
             attractions=[],
@@ -477,9 +452,11 @@ def preview_owned_trip(
                 # Preserve incomplete energy plans instead of hiding them behind
                 # Scenic unavailability when the reachable geometry is shorter.
                 candidate_length_m = _route_geometry_length_m(candidate.geometry)
-                selected_attractions = sorted(
+                selected_attractions = _select_recommendations_by_route_sections(
                     source_attractions,
-                    key=lambda item: float(item.get("route_progress_m", 0) or 0),
+                    section_length_m=100_000,
+                    route_length_m=candidate_length_m,
+                    maximum_count=math.ceil(candidate_length_m / 100_000),
                 )
                 restaurants: list[dict] = []
                 restaurant_search = getattr(provider, "restaurants_near_route", None)
@@ -493,8 +470,8 @@ def preview_owned_trip(
                         )
                     except ORSProviderUnavailable:
                         restaurants = []
-                _, restaurants = _keep_recommendations_clear_of_stops(
-                    [],
+                selected_attractions, restaurants = _keep_recommendations_clear_of_stops(
+                    selected_attractions,
                     restaurants,
                     planned.stops + ([planned.feasibility.first_unreachable_stop] if planned.feasibility.first_unreachable_stop else []),
                 )

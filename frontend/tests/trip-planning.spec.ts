@@ -77,9 +77,9 @@ function scenicPreviewFixture(stationType: "fuel" | "charging", attractions: Tri
   const stops: TripRoutePreview["stops"] = [{ sequence: 1, provider_id: `fixture-${stationType}`, name: null, station_type: stationType, latitude: 46.4, longitude: 23.4, leg_distance_m: 40_000, route_progress_m: 40_000 }];
   const shared = { feasibility: { status: "complete" as const, message: null }, vehicle: { id: "fixture-vehicle", current_level_percent: 100, available_range_km: 500, maximum_range_km: 500 }, legs: [{ sequence: 1, distance_m: 40_000, duration_s: 1_440 }, { sequence: 2, distance_m: 60_000, duration_s: 2_160 }] };
   const fastest = { ...shared, id: "fastest-option-fixture", attraction_count: 0, route_labels: ["fastest" as const], route, stops: [], attractions: [] };
-  const shortestRoute = { ...route, geometry: { ...route.geometry, coordinates: [[23, 46], [23.25, 46.75], [24, 47]] as [number, number][] }, distance_m: 95_000, duration_s: 3_900 };
+  const shortestRoute = { ...route, distance_m: 95_000, duration_s: 3_900 };
   const shortest = { ...shared, id: "shortest-option-fixture", attraction_count: 0, route_labels: ["shortest" as const], route: shortestRoute, stops: [], attractions: [] };
-  const scenicRoute = { ...route, geometry: { ...route.geometry, coordinates: [[23, 46], [23.6, 46.4], [24, 47]] as [number, number][] }, distance_m: 110_000, duration_s: 4_200 };
+  const scenicRoute = { ...route, distance_m: 110_000, duration_s: 4_200 };
   const scenic = { ...shared, id: "scenic-option-fixture", attraction_count: attractions?.length ?? 0, route_labels: ["scenic" as const], route: scenicRoute, stops, attractions: attractions ?? [] };
   return {
     ...fastest,
@@ -345,6 +345,12 @@ test("one Generate routes request returns canonical choices and switching stays 
   expect(response.route_preference).toBe("all");
   expect(response.route_choices?.map((choice) => choice.preference)).toEqual(["fastest", "shortest", "scenic"]);
   expect(response.route_options).toHaveLength(3);
+  expect(new Set(response.route_choices?.map((choice) => choice.route_option_id)).size).toBe(3);
+  expect(response.route_options?.map((option) => option.route.geometry)).toEqual([
+    response.route_options?.[0].route.geometry,
+    response.route_options?.[0].route.geometry,
+    response.route_options?.[0].route.geometry,
+  ]);
   const scenicChoice = response.route_choices?.find((choice) => choice.preference === "scenic");
   const scenicOption = response.route_options?.find((option) => option.id === scenicChoice?.route_option_id);
   expect(scenicOption?.attractions).toHaveLength(1);
@@ -357,6 +363,9 @@ test("one Generate routes request returns canonical choices and switching stays 
   page.on("request", trackPreview);
   const fastestChoice = response.route_choices?.find((choice) => choice.preference === "fastest");
   const fastestOption = response.route_options?.find((option) => option.id === fastestChoice?.route_option_id);
+  await expect(page.getByRole("button", { name: /Fastest/ })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /Shortest/ })).toHaveCount(1);
+  await expect(page.getByRole("button", { name: /Scenic/ })).toHaveCount(1);
   await page.getByRole("button", { name: /Fastest/ }).click();
   expect(previewRequests).toBe(0);
   await expect(page.getByRole("button", { name: /Fastest/ })).toHaveAttribute("aria-pressed", "true");

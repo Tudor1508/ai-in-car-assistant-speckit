@@ -90,9 +90,9 @@ def test_live_fastest_and_shortest_report_the_requested_preference(auth_client: 
 
 
 def test_scenic_preview_keeps_distinct_tied_winners_and_excludes_lower_score(monkeypatch) -> None:
-    route_a = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.5, 0.1), (1, 0)]), distance_m=10_000, duration_s=600)
-    route_b = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.5, 0.2), (1, 0)]), distance_m=12_000, duration_s=720)
-    lower = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.4, 0.1), (1, 0)]), distance_m=9_000, duration_s=540)
+    route_a = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (5, 0.1), (10, 0)]), distance_m=10_000, duration_s=600)
+    route_b = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (5, 0.2), (10, 0)]), distance_m=12_000, duration_s=720)
+    lower = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (5, 0.1), (10, 0.1)]), distance_m=9_000, duration_s=540)
 
     class CandidateProvider:
         def __init__(self, _settings):
@@ -106,10 +106,10 @@ def test_scenic_preview_keeps_distinct_tied_winners_and_excludes_lower_score(mon
         def tourist_attractions_near_route(self, geometry):
             coordinates = tuple(geometry.coordinates)
             if coordinates == tuple(route_a.geometry.coordinates):
-                return [{"source_id": "a-1", "name": "First", "category": "attraction", "latitude": 0.1, "longitude": 0.2, "route_progress_m": 2_000}, {"source_id": "a-2", "name": None, "category": "viewpoint", "latitude": 0.1, "longitude": 0.7, "route_progress_m": 7_000}]
+                return [{"source_id": "a-1", "name": "First", "category": "attraction", "latitude": 0.1, "longitude": 0.2, "route_progress_m": 200_000}, {"source_id": "a-2", "name": None, "category": "viewpoint", "latitude": 0.1, "longitude": 0.7, "route_progress_m": 500_000}]
             if coordinates == tuple(route_b.geometry.coordinates):
-                return [{"source_id": "b-1", "name": "First", "category": "attraction", "latitude": 0.2, "longitude": 0.2, "route_progress_m": 2_000}, {"source_id": "b-2", "name": "Second", "category": "viewpoint", "latitude": 0.2, "longitude": 0.7, "route_progress_m": 7_000}]
-            return [{"source_id": "lower-1", "name": "Only one", "category": "attraction", "latitude": 0.1, "longitude": 0.4, "route_progress_m": 4_000}]
+                return [{"source_id": "b-1", "name": "First", "category": "attraction", "latitude": 0.2, "longitude": 0.2, "route_progress_m": 200_000}, {"source_id": "b-2", "name": "Second", "category": "viewpoint", "latitude": 0.2, "longitude": 0.7, "route_progress_m": 500_000}]
+            return [{"source_id": "lower-1", "name": "Only one", "category": "attraction", "latitude": 0.1, "longitude": 0.4, "route_progress_m": 400_000}]
 
     monkeypatch.setattr(trip_service, "get_owned_vehicle", lambda *_args: SimpleNamespace(id="a" * 32, range_km=100, type="combustion", fuel_type="petrol"))
     monkeypatch.setattr(trip_service, "ORSProvider", CandidateProvider)
@@ -133,9 +133,9 @@ def test_scenic_preview_keeps_distinct_tied_winners_and_excludes_lower_score(mon
 
 
 def test_all_preview_includes_highway_avoiding_candidate_as_canonical_scenic(monkeypatch) -> None:
-    fastest = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.5, 0.1), (1, 0)]), distance_m=10_000, duration_s=600)
-    shortest = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.5, 0.2), (1, 0)]), distance_m=9_000, duration_s=620)
-    avoid_highways = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (0.5, 0.3), (1, 0)]), distance_m=11_000, duration_s=700)
+    fastest = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (3, 0.1), (6, 0)]), distance_m=10_000, duration_s=600)
+    shortest = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (3, 0.2), (6, 0)]), distance_m=9_000, duration_s=620)
+    avoid_highways = RouteMetrics(geometry=RouteGeometry(type="LineString", coordinates=[(0, 0), (3, 0.3), (6, 0)]), distance_m=11_000, duration_s=700)
 
     class AllRoutesProvider:
         MATRIX_BATCH_SIZE = 24
@@ -156,7 +156,7 @@ def test_all_preview_includes_highway_avoiding_candidate_as_canonical_scenic(mon
         def tourist_attractions_near_route(self, geometry):
             if geometry == avoid_highways.geometry:
                 return [
-                    {"source_id": f"scenic-{index}", "name": None, "category": "viewpoint", "latitude": 0.1, "longitude": index / 10, "route_progress_m": index * 1_000}
+                    {"source_id": f"scenic-{index}", "name": None, "category": "viewpoint", "latitude": 0.1, "longitude": index / 10, "route_progress_m": index * 200_000}
                     for index in range(1, 4)
                 ]
             return [{"source_id": f"other-{geometry.coordinates[1][1]}", "name": "POI", "category": "attraction", "latitude": 0.1, "longitude": 0.5, "route_progress_m": 1_000}]
@@ -192,9 +192,9 @@ def test_all_preview_includes_highway_avoiding_candidate_as_canonical_scenic(mon
 
     AllRoutesProvider.same_geometry = True
     duplicate_result = trip_service.preview_owned_trip(None, SimpleNamespace(id="owner"), request, settings)
-    assert len(duplicate_result.route_options) == 1
-    assert duplicate_result.route_options[0].route_labels == ["fastest", "shortest", "scenic"]
-    assert {choice.route_option_id for choice in duplicate_result.route_choices} == {duplicate_result.route_options[0].id}
+    assert len(duplicate_result.route_options) == 3
+    assert [option.route_labels for option in duplicate_result.route_options] == [["fastest"], ["shortest"], ["scenic"]]
+    assert len({choice.route_option_id for choice in duplicate_result.route_choices}) == 3
 
 
 def test_scenic_preview_returns_unavailable_when_routes_are_not_comparable(monkeypatch) -> None:
