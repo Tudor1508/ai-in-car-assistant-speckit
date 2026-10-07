@@ -19,7 +19,12 @@ def test_vehicle_migration_creates_expected_schema(tmp_path: Path, monkeypatch):
         inspector = inspect(engine)
         assert "vehicles" in inspector.get_table_names()
         columns = {column["name"] for column in inspector.get_columns("vehicles")}
-        assert {"id", "owner_account_id", "name", "model", "type", "year", "range_km", "mileage_km", "fuel_type", "created_at", "updated_at"}.issubset(columns)
+        assert {
+            "id", "owner_account_id", "name", "model", "type", "year",
+            "range_km", "mileage_km", "fuel_type", "image_provider",
+            "image_file_title", "image_url", "image_page_url", "image_creator",
+            "image_license_name", "image_license_url", "image_match_kind", "created_at", "updated_at",
+        }.issubset(columns)
         assert "ix_vehicles_owner_created" in {index["name"] for index in inspector.get_indexes("vehicles")}
     finally:
         engine.dispose()

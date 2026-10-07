@@ -17,6 +17,7 @@ class VehicleFields(BaseModel):
     range_km: StrictInt = Field(ge=0)
     mileage_km: StrictInt = Field(ge=0)
     fuel_type: FuelType | None = None
+    image_file_title: str | None = Field(default=None, max_length=255)
 
     @field_validator("name", "model")
     @classmethod
@@ -26,6 +27,18 @@ class VehicleFields(BaseModel):
             raise ValueError("This field is required")
         if len(value) > 80:
             raise ValueError("Must be 80 characters or fewer")
+        return value
+
+    @field_validator("image_file_title")
+    @classmethod
+    def validate_image_file_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value.startswith("File:") or len(value) <= len("File:"):
+            raise ValueError("Image selection must be a Commons file title")
+        if "\n" in value or "\r" in value or "https://" in value.lower():
+            raise ValueError("Image selection must be a Commons file title")
         return value
 
     @field_validator("year")
@@ -58,6 +71,8 @@ class VehiclePatch(BaseModel):
     range_km: StrictInt | None = Field(default=None, ge=0)
     mileage_km: StrictInt | None = Field(default=None, ge=0)
     fuel_type: FuelType | None = None
+    image_file_title: str | None = Field(default=None, max_length=255)
+    discard_uploaded_image: bool = False
 
     @field_validator("name", "model")
     @classmethod
@@ -78,6 +93,18 @@ class VehiclePatch(BaseModel):
             raise ValueError("Year cannot be in the future")
         return value
 
+    @field_validator("image_file_title")
+    @classmethod
+    def validate_image_file_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        value = value.strip()
+        if not value.startswith("File:") or len(value) <= len("File:"):
+            raise ValueError("Image selection must be a Commons file title")
+        if "\n" in value or "\r" in value or "https://" in value.lower():
+            raise ValueError("Image selection must be a Commons file title")
+        return value
+
     @model_validator(mode="after")
     def at_least_one_change(self):
         if not self.model_fields_set:
@@ -85,13 +112,36 @@ class VehiclePatch(BaseModel):
         if any(
             getattr(self, field) is None
             for field in self.model_fields_set
-            if field != "fuel_type"
+            if field not in {"fuel_type", "image_file_title"}
         ):
             raise ValueError("Vehicle fields cannot be null")
         return self
 
 
+class VehicleImageResponse(BaseModel):
+    provider: Literal["wikimedia_commons"]
+    file_title: str
+    image_url: str
+    file_page_url: str
+    creator: str
+    license_name: str
+    license_url: str
+    match_kind: Literal["exact", "similar"]
+
+
+class UploadedVehicleImageResponse(BaseModel):
+    provider: Literal["user_upload"]
+    image_url: str
+    match_kind: Literal["uploaded"]
+
+
+class VehicleImagePreview(BaseModel):
+    status: Literal["matched", "fallback"]
+    image: VehicleImageResponse | None
+
+
 class VehicleResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
     model: str
@@ -100,6 +150,7 @@ class VehicleResponse(BaseModel):
     range_km: int
     mileage_km: int
     fuel_type: FuelType | None
+    image: VehicleImageResponse | UploadedVehicleImageResponse | None = None
     created_at: datetime
     updated_at: datetime
 
