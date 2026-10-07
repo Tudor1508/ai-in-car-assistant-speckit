@@ -16,12 +16,14 @@ import type { AppDispatch, RootState } from "@/lib/store";
 import { authCleared } from "@/features/auth/authSlice";
 import { ApiClientError, setCsrfToken } from "@/lib/api/client";
 import { VehicleForm } from "./VehicleForm";
+import { VehicleImageDisplay } from "./VehicleImageDisplay";
 import { VehicleDeleteDialog } from "./VehicleDeleteDialog";
 import {
   createVehicle,
   deleteVehicle,
   listVehicles,
   safeVehicleError,
+  uploadVehicleImage,
   updateVehicle,
 } from "../vehiclesApi";
 import {
@@ -51,6 +53,7 @@ export function VehicleManagementPage() {
   const [deleting, setDeleting] = useState<Vehicle | null>(null);
   const garageHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusGarageAfterDelete = useRef(false);
+  const createdPendingUpload = useRef<Vehicle | null>(null);
 
   useEffect(() => {
     if (deleting === null && focusGarageAfterDelete.current) {
@@ -80,12 +83,27 @@ export function VehicleManagementPage() {
     void refresh();
   }, [refresh]);
 
-  async function save(payload: VehicleInput) {
+  async function save(payload: VehicleInput, photo?: File) {
     try {
-      const result = editing
-        ? await updateVehicle(editing.id, payload)
-        : await createVehicle(payload);
-      dispatch(vehicleSaved(result.vehicle));
+      const retryingCreated = !editing && createdPendingUpload.current;
+      let savedVehicle = retryingCreated
+        ? (await updateVehicle(retryingCreated.id, payload)).vehicle
+        : editing
+          ? (await updateVehicle(editing.id, payload)).vehicle
+          : (await createVehicle(payload)).vehicle;
+      if (!editing && !retryingCreated && photo) {
+        createdPendingUpload.current = savedVehicle;
+      }
+      if (photo) {
+        dispatch(vehicleSaved(savedVehicle));
+        try {
+          savedVehicle = (await uploadVehicleImage(savedVehicle.id, photo)).vehicle;
+        } catch (cause) {
+          throw new Error(`Vehicle details were saved, but the photo could not be uploaded. ${safeVehicleError(cause)}`);
+        }
+      }
+      createdPendingUpload.current = null;
+      dispatch(vehicleSaved(savedVehicle));
       setFormOpen(false);
       setEditing(undefined);
     } catch (cause) {
@@ -104,6 +122,7 @@ export function VehicleManagementPage() {
   }
 
   function openCreate() {
+    createdPendingUpload.current = null;
     setEditing(undefined);
     setFormOpen(true);
   }
@@ -157,6 +176,13 @@ export function VehicleManagementPage() {
                         <Button size="small" color="error" onClick={() => setDeleting(vehicle)} aria-label={`Delete ${vehicle.name}`}>Delete</Button>
                       </Stack>
                     </Stack>
+                    <Box sx={{ mt: 2 }}>
+                      <VehicleImageDisplay
+                        image={vehicle.image}
+                        vehicleLabel={`${vehicle.name} ${vehicle.model} ${vehicle.year}`}
+                        vehicleId={vehicle.id}
+                      />
+                    </Box>
                     <Typography variant="overline" sx={{ display: "block", mt: 2, color: "#59dced", fontWeight: 700 }}>AT A GLANCE</Typography>
                     <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1, mt: 0.5 }}>
                       <Detail label="Type" value={vehicle.type === "electric" ? "Electric" : "Combustion"} />
@@ -172,7 +198,7 @@ export function VehicleManagementPage() {
           </CardContent>
         </Card>
       </Box>
-      <VehicleForm open={formOpen} vehicle={editing} onClose={() => { setFormOpen(false); setEditing(undefined); }} onSubmit={save} />
+      <VehicleForm open={formOpen} vehicle={editing} onClose={() => { createdPendingUpload.current = null; setFormOpen(false); setEditing(undefined); }} onSubmit={save} />
       <VehicleDeleteDialog vehicle={deleting} onClose={() => setDeleting(null)} onConfirm={remove} />
     </Box>
   );

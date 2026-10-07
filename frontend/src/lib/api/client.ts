@@ -130,6 +130,49 @@ export async function apiRequestBlob(path: string, payload: unknown, signal?: Ab
   return response.blob();
 }
 
+export async function apiUploadFile<T>(path: string, file: File): Promise<T> {
+  const send = (token: string) => fetch(`${getApiBase()}${path}`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": file.type, "X-CSRF-Token": token },
+    body: file,
+  });
+  let token = csrfToken ?? await bootstrapCsrf();
+  let response = await send(token);
+  let body = await response.json() as SuccessEnvelope<T> & ErrorEnvelope;
+  if (response.status === 403 && body.error?.code === "invalid_csrf") {
+    token = await bootstrapCsrf();
+    response = await send(token);
+    body = await response.json() as SuccessEnvelope<T> & ErrorEnvelope;
+  }
+  if (!response.ok) {
+    throw new ApiClientError(
+      body.error?.code ?? "request_failed",
+      body.error?.message ?? "The request could not be completed",
+      body.error?.details,
+    );
+  }
+  return body.data;
+}
+
+export async function apiGetBlob(path: string): Promise<Blob> {
+  const response = await fetch(`${getApiBase()}${path}`, { credentials: "include" });
+  if (!response.ok) {
+    let body: ErrorEnvelope = {};
+    try {
+      body = await response.json() as ErrorEnvelope;
+    } catch {
+      // Use the established generic error if the image endpoint has no JSON body.
+    }
+    throw new ApiClientError(
+      body.error?.code ?? "request_failed",
+      body.error?.message ?? "The image could not be loaded",
+      body.error?.details,
+    );
+  }
+  return response.blob();
+}
+
 export async function apiRequestAudio<T>(path: string, audio: Blob, signal?: AbortSignal): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": audio.type || "application/octet-stream",
