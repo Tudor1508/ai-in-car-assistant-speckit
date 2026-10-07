@@ -12,7 +12,7 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
 }
 
 async function addCombustionVehicle(page: Page) {

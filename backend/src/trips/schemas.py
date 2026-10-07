@@ -50,6 +50,14 @@ class TripPreviewRequest(StrictRequest):
     destination: PlaceSelection
     vehicle_id: str = Field(pattern=r"^[0-9a-f]{32}$")
     current_level_percent: StrictInt = Field(ge=0, le=100)
+    route_preference: Literal["fastest", "shortest", "scenic", "all"] | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def reject_null_route_preference(cls, value):
+        if isinstance(value, dict) and "route_preference" in value and value["route_preference"] is None:
+            raise ValueError("Route preference cannot be null")
+        return value
 
     @model_validator(mode="after")
     def endpoints_must_differ(self) -> "TripPreviewRequest":
@@ -99,6 +107,49 @@ class RouteStop(BaseModel):
         return value
 
 
+class TouristAttraction(BaseModel):
+    source_id: str | None = None
+    name: str | None = None
+    category: Literal["attraction", "viewpoint"]
+    latitude: float
+    longitude: float
+    sequence: int
+    route_progress_m: float
+
+
+class RouteRestaurant(BaseModel):
+    source_id: str | None = None
+    name: str | None = None
+    category: Literal["restaurant"] = "restaurant"
+    latitude: float
+    longitude: float
+    sequence: int
+    route_progress_m: float
+
+
+class TripRouteOption(BaseModel):
+    id: str
+    attraction_count: int
+    route_labels: list[Literal["fastest", "shortest", "scenic"]] = Field(default_factory=list)
+    feasibility: "RouteFeasibility"
+    vehicle: "VehicleRangeSummary"
+    route: "RouteMetrics"
+    legs: list["RouteLeg"]
+    stops: list["RouteStop"]
+    attractions: list[TouristAttraction] = Field(default_factory=list)
+    restaurants: list[RouteRestaurant] = Field(default_factory=list)
+
+
+class TripRouteChoice(BaseModel):
+    preference: Literal["fastest", "shortest", "scenic"]
+    status: Literal["available", "unavailable"]
+    route_option_id: str | None = None
+    reason: Literal[
+        "no_attractions_found", "no_distinct_candidates", "poi_geometry_limit",
+        "poi_results_incomplete", "provider_unavailable",
+    ] | None = None
+
+
 class RouteGeometry(BaseModel):
     type: Literal["LineString"]
     coordinates: list[tuple[float, float]]
@@ -130,6 +181,9 @@ class RouteMetrics(BaseModel):
 class RouteFeasibility(BaseModel):
     status: Literal["complete", "incomplete"]
     message: str | None
+    first_unreachable_stop: RouteStop | None = None
+    next_station_distance_km: float | None = None
+    additional_range_km: float | None = None
 
 
 class TripPreviewResponse(BaseModel):
@@ -138,6 +192,12 @@ class TripPreviewResponse(BaseModel):
     route: RouteMetrics
     legs: list[RouteLeg]
     stops: list[RouteStop]
+    route_preference: Literal["fastest", "shortest", "scenic", "all"] | None = None
+    selected_route_option_id: str | None = None
+    route_options: list[TripRouteOption] | None = None
+    route_choices: list[TripRouteChoice] | None = None
+    attractions: list[TouristAttraction] | None = None
+    restaurants: list[RouteRestaurant] | None = None
 
 
 class FavoriteRouteCreate(StrictRequest):

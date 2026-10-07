@@ -74,7 +74,11 @@ def post_trip_preview(
 ):
 	settings = required_trip_settings()
 	result = preview_owned_trip(db, account, body, settings)
-	return success_envelope(result.model_dump(mode="json"))
+	payload = result.model_dump(mode="json")
+	if body.route_preference is None:
+		for field in ("route_preference", "selected_route_option_id", "route_options", "attractions"):
+			payload.pop(field, None)
+	return success_envelope(payload)
 
 
 @router.get(

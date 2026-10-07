@@ -15,7 +15,7 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
 }
 
 test("login errors do not reveal account existence", async ({ page }) => {
@@ -33,7 +33,7 @@ test("the trip planner has a dedicated protected route", async ({ page }) => {
   const email = `trip-route${Date.now()}@example.com`;
   await registerAndLogin(page, email);
   await page.goto("/");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
   await expect(page.getByRole("heading", { name: "Plan a trip." })).toBeVisible();
 });
 

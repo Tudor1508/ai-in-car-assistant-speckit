@@ -14,7 +14,7 @@ test("authenticated pages share accessible navigation and public auth pages do n
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
   const navigation = page.getByRole("navigation", { name: "Main navigation" });
   await expect(navigation.getByRole("link", { name: "Plan a trip" })).toHaveAttribute("aria-current", "page");
   await navigation.getByRole("link", { name: "Profile" }).click();

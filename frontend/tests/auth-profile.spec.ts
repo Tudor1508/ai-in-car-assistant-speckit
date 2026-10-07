@@ -12,7 +12,7 @@ async function registerAndLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
   await page.goto("/profile");
 }
 
@@ -59,7 +59,7 @@ test("password mismatch is actionable and failed change leaves the current passw
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Parolă").fill("ExamplePass1!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
   await page.goto("/profile");
 
   await page.getByRole("button", { name: "Schimbă parola" }).click();
@@ -74,7 +74,7 @@ test("password mismatch is actionable and failed change leaves the current passw
   await expect(page.getByRole("alert").filter({ hasText: "Emailul sau parola sunt incorecte." })).toBeVisible();
   await page.getByLabel("Parolă").fill("NewPassword2!");
   await page.getByRole("button", { name: "Autentificare" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/trip$/);
 });
 
 test("deactivation requires the current password and explicit confirmation", async ({ page }) => {

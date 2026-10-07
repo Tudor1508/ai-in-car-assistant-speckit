@@ -80,3 +80,22 @@ def test_preview_accepts_valid_boundary_percentage_and_trims_labels() -> None:
     assert parsed.current_level_percent == 0
     assert parsed.origin.label == "Origin"
     assert parsed.destination.label == "Destination"
+
+
+@pytest.mark.parametrize("preference", ["fastest", "shortest", "scenic"])
+def test_preview_accepts_supported_route_preference(preference: str) -> None:
+    request = valid_preview_request()
+    request["route_preference"] = preference
+    assert TripPreviewRequest.model_validate(request).route_preference == preference
+
+
+@pytest.mark.parametrize("preference", [None, "balanced", "FASTEST"])
+def test_preview_rejects_null_or_unknown_route_preference(preference: object) -> None:
+    request = valid_preview_request()
+    request["route_preference"] = preference
+    with pytest.raises(ValidationError):
+        TripPreviewRequest.model_validate(request)
+
+
+def test_preview_omitted_route_preference_keeps_legacy_default() -> None:
+    assert TripPreviewRequest.model_validate(valid_preview_request()).route_preference is None

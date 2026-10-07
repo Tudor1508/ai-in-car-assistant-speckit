@@ -90,7 +90,9 @@ class TripSettings:
     poi_limit: int
     charging_category_ids: tuple[int, ...]
     fuel_category_id: int
+    tourist_category_ids: tuple[int, ...]
     max_stops: int
+    geoapify_api_key: str = field(default="", repr=False)
 
     @classmethod
     def from_environment(cls) -> "TripSettings":
@@ -116,7 +118,11 @@ class TripSettings:
                 "OPENROUTESERVICE_CHARGING_CATEGORY_IDS", (593, 594)
             ),
             fuel_category_id=_configured_positive_int("OPENROUTESERVICE_FUEL_CATEGORY_ID", 596),
+            tourist_category_ids=_configured_positive_int_list(
+                "OPENROUTESERVICE_TOURIST_CATEGORY_IDS", (622, 627)
+            ),
             max_stops=_configured_positive_int("TRIP_MAX_STOPS", 5),
+            geoapify_api_key=os.environ.get("GEOAPIFY_API_KEY", "").strip(),
         )
 
 

@@ -52,8 +52,21 @@ def install_error_handlers(app: FastAPI) -> None:
             "validation_error": "Vehicle details do not meet the requirements",
             "route_not_found": "No drivable route could be calculated",
             "routing_provider_unavailable": "Route data is temporarily unavailable",
+            "route_preference_unavailable": "Scenic recommendations are unavailable for this route. Choose Fastest or Shortest.",
         }
         detail = exc.detail if isinstance(exc.detail, str) else ""
+        details = None
+        if isinstance(exc.detail, dict) and exc.detail.get("code") == "route_preference_unavailable":
+            reason = exc.detail.get("reason")
+            safe_reasons = {
+                "no_distinct_candidates",
+                "poi_geometry_limit",
+                "poi_results_incomplete",
+                "candidate_comparison_unavailable",
+            }
+            if reason in safe_reasons:
+                detail = "route_preference_unavailable"
+                details = [{"preference": "scenic", "reason": reason}]
         code = detail if detail in safe_codes else "http_error"
         message = safe_codes.get(code, "The request could not be completed")
         return JSONResponse(
@@ -63,6 +76,7 @@ def install_error_handlers(app: FastAPI) -> None:
                 "error": {
                     "code": code,
                     "message": message,
+                    **({"details": details} if details is not None else {}),
                 }
             },
         )
