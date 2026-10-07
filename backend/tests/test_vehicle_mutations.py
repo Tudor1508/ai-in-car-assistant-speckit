@@ -3,6 +3,8 @@ import pytest
 from src.auth.passwords import hash_password
 from src.data.models.account import Account
 from src.data.models.vehicle import Vehicle
+from src.vehicles import service
+from src.vehicles.image_provider import CommonsVehicleImage
 
 ORIGIN = "https://testserver"
 
@@ -41,6 +43,46 @@ def test_create_and_patch_trim_fields_and_persist_values(auth_client):
     assert updated.status_code == 200
     assert updated.json()["data"]["vehicle"]["mileage_km"] == 325000
     assert auth_client.get(f"/vehicles/{vehicle['id']}").json()["data"]["vehicle"]["mileage_km"] == 325000
+
+
+def test_image_resolution_failure_keeps_valid_saves_and_vehicle_image_lifecycle(auth_client, monkeypatch):
+    csrf = signed_in(auth_client, "image-lifecycle@example.com")
+    image = CommonsVehicleImage(
+        file_title="File:Audi A5 2020.jpg",
+        image_url="https://upload.wikimedia.org/audi.jpg",
+        file_page_url="https://commons.wikimedia.org/wiki/File:Audi_A5_2020.jpg",
+        creator="Jane Driver",
+        license_name="CC BY-SA 4.0",
+        license_url="https://creativecommons.org/licenses/by-sa/4.0/",
+        match_kind="exact",
+    )
+    monkeypatch.setattr(service, "resolve_vehicle_image", lambda *_args: image)
+    created = auth_client.post(
+        "/vehicles",
+        headers=headers(csrf),
+        json=payload(name="Audi", model="A5", image_file_title=image.file_title),
+    )
+    assert created.status_code == 201
+    vehicle = created.json()["data"]["vehicle"]
+    vehicle_url = f"/vehicles/{vehicle['id']}"
+    assert vehicle["image"]["file_title"] == image.file_title
+
+    monkeypatch.setattr(service, "resolve_vehicle_image", lambda *_args: None)
+    unchanged = auth_client.patch(vehicle_url, headers=headers(csrf), json={"mileage_km": 12500})
+    assert unchanged.status_code == 200
+    assert unchanged.json()["data"]["vehicle"]["image"]["file_title"] == image.file_title
+
+    changed = auth_client.patch(vehicle_url, headers=headers(csrf), json={"year": 2021})
+    assert changed.status_code == 200
+    assert changed.json()["data"]["vehicle"]["image"] is None
+
+    fallback_create = auth_client.post(
+        "/vehicles",
+        headers=headers(csrf),
+        json=payload(name="Unknown", model="Vehicle", image_file_title=image.file_title),
+    )
+    assert fallback_create.status_code == 201
+    assert fallback_create.json()["data"]["vehicle"]["image"] is None
 
 
 def test_electric_vehicle_has_no_fuel_and_type_changes_validate_merged_record(auth_client):
@@ -93,6 +135,54 @@ def test_another_account_cannot_update_a_vehicle(auth_client, session_factory):
     response = auth_client.patch(f"/vehicles/{'a' * 32}", headers=headers(csrf), json={"name": "stolen"})
     assert response.status_code == 404
     assert response.json()["error"]["code"] == "vehicle_not_found"
+
+
+def test_another_account_cannot_change_a_foreign_vehicle_image(auth_client, session_factory, monkeypatch):
+    csrf = signed_in(auth_client, "image-owner@example.com")
+    foreign_id = "9" * 32
+    with session_factory() as db:
+        owner = db.query(Account).filter_by(email="image-owner@example.com").one()
+        other = Account(
+            id="4" * 32,
+            name="Foreign image owner",
+            email="foreign-image-owner@example.com",
+            email_normalized="foreign-image-owner@example.com",
+            password_hash="unused",
+            role="user",
+            status="active",
+        )
+        db.add(other)
+        db.add(Vehicle(
+            id=foreign_id,
+            owner_account_id=other.id,
+            name="Audi",
+            model="A5",
+            type="combustion",
+            year=2020,
+            range_km=600,
+            mileage_km=12000,
+            fuel_type="diesel",
+        ))
+        db.commit()
+        assert owner.id != other.id
+
+    def provider_must_not_be_called(*_args):
+        pytest.fail("foreign vehicle image mutation reached the Commons provider")
+
+    monkeypatch.setattr("src.vehicles.service.resolve_vehicle_image", provider_must_not_be_called)
+    response = auth_client.patch(
+        f"/vehicles/{foreign_id}",
+        headers=headers(csrf),
+        json={"image_file_title": "File:Audi A5 2020.jpg"},
+    )
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "vehicle_not_found"
+
+    with session_factory() as db:
+        foreign = db.get(Vehicle, foreign_id)
+        assert foreign is not None
+        assert foreign.image_file_title is None
+        assert foreign.model == "A5"
 
 
 @pytest.mark.parametrize("role", ["user", "admin", "producer"])

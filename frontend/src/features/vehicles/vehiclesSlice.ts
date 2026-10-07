@@ -4,6 +4,21 @@ import { authCleared } from "@/features/auth/authSlice";
 export type VehicleType = "combustion" | "electric";
 export type FuelType = "petrol" | "diesel" | "lpg" | "cng" | "other";
 
+export type VehicleImage = {
+  provider: "wikimedia_commons";
+  file_title: string;
+  image_url: string;
+  file_page_url: string;
+  creator: string;
+  license_name: string;
+  license_url: string;
+  match_kind: "exact" | "similar";
+} | {
+  provider: "user_upload";
+  image_url: string;
+  match_kind: "uploaded";
+};
+
 export type Vehicle = {
   id: string;
   name: string;
@@ -13,6 +28,7 @@ export type Vehicle = {
   range_km: number;
   mileage_km: number;
   fuel_type: FuelType | null;
+  image: VehicleImage | null;
   created_at: string;
   updated_at: string;
 };
