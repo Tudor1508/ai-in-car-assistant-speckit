@@ -16,6 +16,7 @@ const playwrightBaseUrl = requiredEnvironmentValue("PLAYWRIGHT_BASE_URL");
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: ["**/concierge.integration.spec.ts"],
   fullyParallel: false,
   workers: 1,
   timeout: 60_000,

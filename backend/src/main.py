@@ -9,6 +9,7 @@ from src.data.database import create_engine
 from src.vehicles.routes import router as vehicles_router
 from src.trips.routes import router as trips_router
 from src.admin.routes import router as admin_router
+from src.assistant.routes import router as assistant_router
 
 
 def create_app(engine: Engine | None = None) -> FastAPI:
@@ -25,6 +26,7 @@ def create_app(engine: Engine | None = None) -> FastAPI:
     application.include_router(vehicles_router)
     application.include_router(trips_router)
     application.include_router(admin_router)
+    application.include_router(assistant_router)
     install_error_handlers(application)
 
     @application.get("/health")
