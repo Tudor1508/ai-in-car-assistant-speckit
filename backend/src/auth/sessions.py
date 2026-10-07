@@ -82,6 +82,13 @@ def apply_trusted_role_change(
     if role not in {"user", "admin", "producer"}:
         raise ValueError("Unsupported account role")
     if account.role != role:
+        if role == "admin":
+            existing = db.scalar(select(Account.id).where(Account.admin_slot == "primary", Account.id != account.id))
+            if existing:
+                raise ValueError("An administrator is already provisioned")
+            account.admin_slot = "primary"
+        else:
+            account.admin_slot = None
         account.role = role
         account.updated_at = now or utc_now()
         revoke_all_sessions(db, account.id, now)

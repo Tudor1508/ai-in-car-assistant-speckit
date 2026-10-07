@@ -6,12 +6,12 @@ export type VehiclePatch = Partial<VehicleInput>;
 
 export function safeVehicleError(error: unknown): string {
   if (error instanceof ApiClientError) {
-    if (error.code === "authentication_required") return "Sesiunea ta a expirat. Autentifică-te din nou.";
-    if (error.code === "vehicle_not_found") return "Acest vehicul nu mai este disponibil. Reîncarcă garajul.";
-    if (error.code === "validation_error") return "Verifică detaliile vehiculului și încearcă din nou.";
-    return error.message || "Cererea nu a putut fi procesată. Încearcă din nou.";
+    if (error.code === "authentication_required") return "Your session has expired. Please sign in again.";
+    if (error.code === "vehicle_not_found") return "This vehicle is no longer available. Reload your garage.";
+    if (error.code === "validation_error") return "Check the vehicle details and try again.";
+    return error.message || "The request could not be processed. Please try again.";
   }
-  return "Cererea nu a putut fi procesată. Verifică conexiunea și încearcă din nou.";
+  return "The request could not be processed. Check your connection and try again.";
 }
 
 export function listVehicles(): Promise<{ vehicles: Vehicle[] }> {

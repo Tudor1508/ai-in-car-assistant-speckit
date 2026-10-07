@@ -8,7 +8,7 @@ ORIGIN = "https://testserver"
 @pytest.mark.parametrize("role", ["user", "admin", "producer"])
 def test_every_assigned_role_has_self_service_only(auth_client, session_factory, role):
     db = session_factory()
-    user = Account(id="c" * 32, name="Role User", email=f"{role}@example.com", email_normalized=f"{role}@example.com", password_hash=hash_password("ExamplePass1!"), role=role, status="active")
+    user = Account(id="c" * 32, name="Role User", email=f"{role}@example.com", email_normalized=f"{role}@example.com", password_hash=hash_password("ExamplePass1!"), role=role, status="active", admin_slot="primary" if role == "admin" else None)
     other = Account(id="d" * 32, name="Other User", email="other@example.com", email_normalized="other@example.com", password_hash=hash_password("ExamplePass1!"), role="user", status="active")
     db.add_all([user, other]); db.commit(); db.close()
     token = auth_client.post("/auth/csrf/bootstrap", headers={"Origin": ORIGIN}).json()["data"]["csrf_token"]

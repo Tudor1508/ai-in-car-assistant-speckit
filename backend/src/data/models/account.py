@@ -18,6 +18,8 @@ class Account(Base):
             "role IN ('user', 'admin', 'producer')", name="ck_accounts_role"
         ),
         CheckConstraint("status IN ('active', 'disabled')", name="ck_accounts_status"),
+        UniqueConstraint("admin_slot", name="uq_accounts_admin_slot"),
+        CheckConstraint("(role = 'admin' AND admin_slot = 'primary') OR (role != 'admin' AND admin_slot IS NULL)", name="ck_accounts_admin_slot_role"),
     )
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
@@ -27,6 +29,8 @@ class Account(Base):
     password_hash: Mapped[str] = mapped_column(String(512), nullable=False)
     role: Mapped[str] = mapped_column(String(16), nullable=False, default="user")
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active")
+    brand: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    admin_slot: Mapped[str | None] = mapped_column(String(16), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now
     )

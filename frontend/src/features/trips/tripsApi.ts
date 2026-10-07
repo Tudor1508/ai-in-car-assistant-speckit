@@ -21,24 +21,24 @@ type TripPreviewPayload = {
 export function safeTripError(error: unknown): string {
   if (error instanceof ApiClientError) {
     if (error.code === "authentication_required") {
-      return "Sesiunea ta a expirat. Autentifică-te din nou.";
+      return "Your session has expired. Please sign in again.";
     }
     if (error.code === "vehicle_not_found") {
-      return "Vehiculul selectat nu mai este disponibil. Reîncarcă lista de vehicule.";
+      return "The selected vehicle is no longer available. Reload your vehicle list.";
     }
     if (error.code === "route_not_found") {
-      return "Nu am găsit un traseu rutier între aceste locații.";
+      return "No drivable route was found between these locations.";
     }
     if (error.code === "routing_provider_unavailable") {
-      return "Serviciul de rutare nu este disponibil momentan. Încearcă din nou.";
+      return "The routing service is temporarily unavailable. Please try again.";
     }
     if (error.code === "route_preference_unavailable") return "Traseul scenic nu este disponibil pentru această călătorie. Alege Fastest sau Shortest.";
     if (error.code === "validation_error") {
-      return "Verifică locațiile și nivelul de combustibil sau baterie.";
+      return "Check the locations and the fuel or battery level.";
     }
-    return error.message || "Cererea nu a putut fi procesată. Încearcă din nou.";
+    return error.message || "The request could not be processed. Please try again.";
   }
-  return "Cererea nu a putut fi procesată. Verifică conexiunea și încearcă din nou.";
+  return "The request could not be processed. Check your connection and try again.";
 }
 
 export function searchPlaces(query: string): Promise<PlaceSearchResult> {

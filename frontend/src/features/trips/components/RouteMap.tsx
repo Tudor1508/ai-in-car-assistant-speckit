@@ -106,7 +106,7 @@ function AnimatedRangeLine({ positions }: { positions: [number, number][] }) {
 
 export default function RouteMap({ preview, origin, destination }: Props) {
   if (!tileUrl || !attribution) {
-    return <Alert severity="error">Configurația hărții lipsește. Verifică NEXT_PUBLIC_MAP_TILE_URL și NEXT_PUBLIC_MAP_ATTRIBUTION.</Alert>;
+    return <Alert severity="error">Map configuration is missing. Check NEXT_PUBLIC_MAP_TILE_URL and NEXT_PUBLIC_MAP_ATTRIBUTION.</Alert>;
   }
   const points = preview.route.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number]);
   const rangePositions = useMemo(
@@ -133,7 +133,7 @@ export default function RouteMap({ preview, origin, destination }: Props) {
     : 0;
 
   return (
-    <Box sx={{ height: { xs: 320, md: 460 }, borderRadius: 3, overflow: "hidden", border: "1px solid #33495b" }} aria-label="Hartă cu traseul planificat">
+    <Box sx={{ height: { xs: 320, md: 460 }, borderRadius: 3, overflow: "hidden", border: "1px solid #33495b" }} aria-label="Map showing the planned route">
       <MapContainer center={center} zoom={7} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl={false} preferCanvas>
         <TileLayer url={tileUrl} attribution={attribution} keepBuffer={0} updateWhenIdle={false} updateWhenZooming={false} />
         <AttributionControl position="bottomright" prefix={false} />

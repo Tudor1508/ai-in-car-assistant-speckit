@@ -27,7 +27,7 @@ export function valuesFromVehicle(vehicle?: Vehicle): VehicleFormValues {
 
 function parseWholeKilometers(value: string, label: string, errors: VehicleFormErrors) {
   if (!/^\d+$/.test(value)) {
-    errors[label as "range_km" | "mileage_km"] = "Introdu un număr întreg pozitiv sau zero de kilometri.";
+    errors[label as "range_km" | "mileage_km"] = "Enter a whole number of kilometers greater than or equal to zero.";
     return null;
   }
   return Number(value);
@@ -40,16 +40,16 @@ export function validateVehicleForm(values: VehicleFormValues): {
   const errors: VehicleFormErrors = {};
   const name = values.name.trim();
   const model = values.model.trim();
-  if (!name || name.length > 80) errors.name = "Introdu un nume cu 1–80 de caractere.";
-  if (!model || model.length > 80) errors.model = "Introdu un model cu 1–80 de caractere.";
+  if (!name || name.length > 80) errors.name = "Enter a name between 1 and 80 characters.";
+  if (!model || model.length > 80) errors.model = "Enter a model between 1 and 80 characters.";
   const year = /^\d{4}$/.test(values.year) ? Number(values.year) : NaN;
   if (!Number.isInteger(year) || year < 1886 || year > new Date().getFullYear()) {
-    errors.year = `Introdu un an între 1886 și ${new Date().getFullYear()}.`;
+    errors.year = `Enter a year between 1886 and ${new Date().getFullYear()}.`;
   }
   const range_km = parseWholeKilometers(values.range_km, "range_km", errors);
   const mileage_km = parseWholeKilometers(values.mileage_km, "mileage_km", errors);
   if (values.type === "combustion" && !values.fuel_type) {
-    errors.fuel_type = "Alege tipul de combustibil.";
+    errors.fuel_type = "Choose a fuel type.";
   }
   if (Object.keys(errors).length) return { errors, payload: null };
   return {

@@ -42,6 +42,7 @@ def install_error_handlers(app: FastAPI) -> None:
             "invalid_origin": "The request origin is not allowed",
             "invalid_csrf": "The request could not be verified",
             "authentication_required": "Authentication is required",
+            "admin_required": "Administrator access is required",
             "invalid_credentials": "Email or password is incorrect",
             "email_unavailable": "Email is unavailable",
             "invalid_current_password": "Current password is incorrect",

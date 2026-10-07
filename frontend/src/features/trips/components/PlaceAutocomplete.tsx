@@ -54,20 +54,20 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
   function useCurrentLocation() {
     setLocationError("");
     if (!navigator.geolocation) {
-      setLocationError("Browserul nu oferă acces la locație. Poți introduce și selecta o adresă.");
+      setLocationError("Location access is unavailable in this browser. You can enter and select an address instead.");
       return;
     }
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         const place: PlaceSelection = {
-          label: `Locația mea (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
+          label: `My location (${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)})`,
           latitude: coords.latitude,
           longitude: coords.longitude,
         };
         onChange(place.label);
         onSelect(place);
       },
-      () => setLocationError("Nu am putut accesa locația. Verifică permisiunea și încearcă din nou."),
+      () => setLocationError("Could not access your location. Check the permission and try again."),
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
     );
   }
@@ -83,7 +83,7 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
         isOptionEqualToValue={(option, current) => typeof current !== "string" && option.latitude === current.latitude && option.longitude === current.longitude}
         filterOptions={(options) => options}
         loading={loading}
-        noOptionsText={query.length < configuredMinChars ? "Introdu mai multe caractere" : "Nu am găsit sugestii"}
+        noOptionsText={query.length < configuredMinChars ? "Enter more characters" : "No suggestions found"}
         onInputChange={(_, nextValue, reason) => {
           if (reason === "input" || reason === "clear") {
             onChange(nextValue);
@@ -116,16 +116,16 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
           />
         )}
       />
-      {allowCurrentLocation && <Button type="button" onClick={useCurrentLocation} sx={{ alignSelf: "flex-start" }}>Folosește locația curentă</Button>}
+      {allowCurrentLocation && <Button type="button" onClick={useCurrentLocation} sx={{ alignSelf: "flex-start" }}>Use current location</Button>}
       {locationError && <Alert severity="warning" role="alert">{locationError}</Alert>}
-      {searchError && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => setRetryVersion((current) => current + 1)}>Reîncearcă căutarea</Button>}>{searchError}</Alert>}
+      {searchError && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => setRetryVersion((current) => current + 1)}>Retry search</Button>}>{searchError}</Alert>}
       {!searchError && selected?.label !== value && query.length >= configuredMinChars && !loading && suggestions.length === 0 && (
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-          <Alert severity="info" sx={{ flex: 1 }}>Nu am găsit sugestii</Alert>
-          <Button type="button" onClick={() => setRetryVersion((current) => current + 1)}>Reîncearcă căutarea</Button>
+          <Alert severity="info" sx={{ flex: 1 }}>No suggestions found</Alert>
+          <Button type="button" onClick={() => setRetryVersion((current) => current + 1)}>Retry search</Button>
         </Box>
       )}
-      {!searchConfigValid && <Alert severity="error" role="alert">Configurează NEXT_PUBLIC_PLACE_MIN_CHARS și NEXT_PUBLIC_PLACE_DEBOUNCE_MS pentru căutarea locațiilor.</Alert>}
+      {!searchConfigValid && <Alert severity="error" role="alert">Configure NEXT_PUBLIC_PLACE_MIN_CHARS and NEXT_PUBLIC_PLACE_DEBOUNCE_MS to enable location search.</Alert>}
     </Stack>
   );
 }

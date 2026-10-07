@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "@/lib/store";
-import { authCleared } from "@/features/auth/authSlice";
-import { logoutAccount } from "@/features/auth/authApi";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch, RootState } from "@/lib/store";
+import { accountLoaded, authCleared } from "@/features/auth/authSlice";
+import { logoutAccount, readCurrentAccount } from "@/features/auth/authApi";
 import { setCsrfToken } from "@/lib/api/client";
 
 const links = [
@@ -20,19 +20,21 @@ export function AppNavigation() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
+  const account = useSelector((state: RootState) => state.auth.account);
   const [error, setError] = useState("");
+  useEffect(() => { if (!account) void readCurrentAccount().then((current) => dispatch(accountLoaded(current))).catch(() => undefined); }, [account, dispatch]);
 
   async function signOut() {
     setError("");
     try {
       await logoutAccount();
     } catch {
-      setError("Deconectarea nu a putut fi confirmată. Încearcă din nou.");
+      setError("Sign out could not be confirmed. Please try again.");
       return;
     }
     setCsrfToken(null);
     dispatch(authCleared());
-    router.replace("/login");
+    router.replace("/");
   }
 
   return (

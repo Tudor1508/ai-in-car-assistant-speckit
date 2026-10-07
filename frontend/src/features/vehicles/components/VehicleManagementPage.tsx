@@ -35,11 +35,11 @@ import {
 import type { VehicleInput } from "../vehiclesApi";
 
 const fuelNames: Record<string, string> = {
-  petrol: "Benzină",
+  petrol: "Gasoline",
   diesel: "Diesel",
-  lpg: "GPL",
-  cng: "GNC",
-  other: "Alt tip",
+  lpg: "LPG",
+  cng: "CNG",
+  other: "Other",
 };
 
 export function VehicleManagementPage() {
@@ -117,31 +117,31 @@ export function VehicleManagementPage() {
     <Box sx={{ minHeight: "calc(100vh - 72px)", bgcolor: "#081523", color: "white", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
       <Box sx={{ maxWidth: 1060, mx: "auto" }}>
         <Box sx={{ mb: 3, p: { xs: 3, sm: 4 }, borderRadius: 4, background: "linear-gradient(120deg, #1a3040, #111a2a 75%)", border: "1px solid #283c4b" }}>
-          <Typography variant="overline" sx={{ color: "#51def0", letterSpacing: 2 }}>▣ GARAGE-UL TĂU</Typography>
-          <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, fontSize: { xs: "2rem", sm: "3rem" } }}>Vehiculele mele<span style={{ color: "#51def0" }}>.</span></Typography>
-          <Typography sx={{ mt: 1, maxWidth: 520 }}>Păstrează informațiile mașinilor tale actualizate într-un singur loc.</Typography>
+      <Typography variant="overline" sx={{ color: "#51def0", letterSpacing: 2 }}>▣ YOUR GARAGE</Typography>
+          <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, fontSize: { xs: "2rem", sm: "3rem" } }}>My vehicles<span style={{ color: "#51def0" }}>.</span></Typography>
+          <Typography sx={{ mt: 1, maxWidth: 520 }}>Keep your vehicle details up to date in one place.</Typography>
         </Box>
         <Card sx={{ bgcolor: "#0d1928", color: "white", border: "1px solid #283444", borderRadius: 4 }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <Stack direction={{ xs: "column", sm: "row" }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: 2, mb: 2.5 }}>
               <Box>
-                <Typography ref={garageHeadingRef} id="garage-heading" tabIndex={-1} variant="h5" sx={{ fontWeight: 750, "&:focus-visible": { outline: "2px solid #58dced", outlineOffset: 4 } }}>Garajul meu</Typography>
-                <Typography variant="body2" color="grey.400">{items.length} {items.length === 1 ? "vehicul" : "vehicule"} în garaj</Typography>
+                <Typography ref={garageHeadingRef} id="garage-heading" tabIndex={-1} variant="h5" sx={{ fontWeight: 750, "&:focus-visible": { outline: "2px solid #58dced", outlineOffset: 4 } }}>My garage</Typography>
+                <Typography variant="body2" color="grey.400">{items.length} {items.length === 1 ? "vehicle" : "vehicles"} in your garage</Typography>
               </Box>
               <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap" }}>
                 <Button variant="outlined" onClick={() => void refresh()} disabled={status === "loading"} sx={{ borderRadius: 5 }}>
-                  Reîncarcă garajul
+                  Reload garage
                 </Button>
-                <Button variant="contained" onClick={openCreate} sx={{ borderRadius: 5, fontWeight: 700 }}>＋ Adaugă vehicul</Button>
+                <Button variant="contained" onClick={openCreate} sx={{ borderRadius: 5, fontWeight: 700 }}>＋ Add vehicle</Button>
               </Stack>
             </Stack>
-            {status === "loading" && items.length === 0 && <Typography role="status">Se încarcă garajul…</Typography>}
-            {error && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void refresh()}>Reîncearcă</Button>} sx={{ mb: 2 }}>{error}</Alert>}
+            {status === "loading" && items.length === 0 && <Typography role="status">Loading your garage…</Typography>}
+            {error && <Alert severity="error" role="alert" action={<Button color="inherit" size="small" onClick={() => void refresh()}>Retry</Button>} sx={{ mb: 2 }}>{error}</Alert>}
             {status !== "loading" && items.length === 0 && !error && (
               <Box sx={{ textAlign: "center", py: 6 }}>
-                <Typography variant="h6">Garajul tău este gol</Typography>
-                <Typography color="grey.400" sx={{ mb: 2 }}>Adaugă prima mașină pentru a-i păstra detaliile la îndemână.</Typography>
-                <Button variant="outlined" onClick={openCreate}>Adaugă vehicul</Button>
+                <Typography variant="h6">Your garage is empty</Typography>
+                <Typography color="grey.400" sx={{ mb: 2 }}>Add your first vehicle to keep its details handy.</Typography>
+                <Button variant="outlined" onClick={openCreate}>Add vehicle</Button>
               </Box>
             )}
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 2 }}>
@@ -154,17 +154,17 @@ export function VehicleManagementPage() {
                         <Typography color="grey.300">{vehicle.model}</Typography>
                       </Box>
                       <Stack direction="row" sx={{ gap: 0.5 }}>
-                        <Button size="small" onClick={() => openEdit(vehicle)} aria-label={`Editează ${vehicle.name}`}>Editează</Button>
-                        <Button size="small" color="error" onClick={() => setDeleting(vehicle)} aria-label={`Șterge ${vehicle.name}`}>Șterge</Button>
+                        <Button size="small" onClick={() => openEdit(vehicle)} aria-label={`Edit ${vehicle.name}`}>Edit</Button>
+                        <Button size="small" color="error" onClick={() => setDeleting(vehicle)} aria-label={`Delete ${vehicle.name}`}>Delete</Button>
                       </Stack>
                     </Stack>
-                    <Typography variant="overline" sx={{ display: "block", mt: 2, color: "#59dced", fontWeight: 700 }}>PE SCURT</Typography>
+                    <Typography variant="overline" sx={{ display: "block", mt: 2, color: "#59dced", fontWeight: 700 }}>AT A GLANCE</Typography>
                     <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1, mt: 0.5 }}>
-                      <Detail label="Tip" value={vehicle.type === "electric" ? "Electric" : "Combustie"} />
-                      <Detail label="An" value={String(vehicle.year)} />
-                      <Detail label="Autonomie" value={`${vehicle.range_km.toLocaleString("ro-RO")} km`} />
-                      <Detail label="Kilometraj" value={`${vehicle.mileage_km.toLocaleString("ro-RO")} km`} />
-                      <Detail label="Combustibil" value={vehicle.fuel_type ? fuelNames[vehicle.fuel_type] : "Nu se aplică"} />
+                      <Detail label="Type" value={vehicle.type === "electric" ? "Electric" : "Combustion"} />
+                      <Detail label="Year" value={String(vehicle.year)} />
+                      <Detail label="Range" value={`${vehicle.range_km.toLocaleString("en-US")} km`} />
+                      <Detail label="Mileage" value={`${vehicle.mileage_km.toLocaleString("en-US")} km`} />
+                      <Detail label="Fuel type" value={vehicle.fuel_type ? fuelNames[vehicle.fuel_type] : "Not applicable"} />
                     </Box>
                   </CardContent>
                 </Card>

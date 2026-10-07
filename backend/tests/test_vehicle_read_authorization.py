@@ -43,7 +43,7 @@ def test_vehicle_reads_are_owner_scoped_for_every_account_role(auth_client, sess
     other_id = "4" * 32
     with session_factory() as db:
         db.add_all([
-            Account(id=owner_id, name="Role owner", email=f"{role}@roles.example", email_normalized=f"{role}@roles.example", password_hash=hash_password("ExamplePass1!"), role=role, status="active"),
+            Account(id=owner_id, name="Role owner", email=f"{role}@roles.example", email_normalized=f"{role}@roles.example", password_hash=hash_password("ExamplePass1!"), role=role, status="active", admin_slot="primary" if role == "admin" else None),
             Account(id=other_id, name="Other", email="other@roles.example", email_normalized="other@roles.example", password_hash="unused", role="user", status="active"),
             Vehicle(id="a" * 32, owner_account_id=owner_id, name="Own car", model="Own model", type="electric", year=2022, range_km=300, mileage_km=100, fuel_type=None),
             Vehicle(id="b" * 32, owner_account_id=other_id, name="Other car", model="Other model", type="electric", year=2023, range_km=350, mileage_km=120, fuel_type=None),
