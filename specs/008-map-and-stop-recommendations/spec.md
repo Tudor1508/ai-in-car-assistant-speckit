@@ -1,8 +1,8 @@
 # Feature Specification: Map and Stop Recommendations
 
-**Feature Branch**: `008-map-and-stop-recommendations`  
-**Created**: 2026-10-05  
-**Status**: Draft  
+**Feature Branch**: `008-map-and-stop-recommendations`
+**Created**: 2026-10-05
+**Status**: Draft
 **Input**: Extend the implemented 007 trip preview so one action generates Fastest, Shortest, and Scenic route choices, and show tourist attraction recommendations on Scenic trips.
 
 ## Context and Existing Behavior

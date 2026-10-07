@@ -1,6 +1,6 @@
 # Research: Map and Stop Recommendations
 
-**Date**: 2026-10-05  
+**Date**: 2026-10-05
 **Scope**: T003 research for extending the existing 007 trip preview. No implementation or provider calls were performed.
 
 ## Decisions recorded from the approved specification
