@@ -97,7 +97,11 @@ export function PlaceAutocomplete({ label, value, selected, onChange, onSelect, 
             onSelect(place);
           }
         }}
-        renderOption={(props, option) => <li {...props} key={`${option.latitude}:${option.longitude}`}>{option.label}</li>}
+        renderOption={(props, option, state) => (
+          <li {...props} key={`${option.provider_id ?? `${option.latitude}:${option.longitude}`}:${state.index}`}>
+            {option.label}
+          </li>
+        )}
         renderInput={(params) => (
           <TextField
             {...params}
