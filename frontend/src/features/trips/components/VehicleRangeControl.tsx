@@ -5,6 +5,7 @@ import { Alert, Box, Button, FormControl, InputLabel, MenuItem, Popover, Select,
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/lib/store";
 import { currentLevelChanged, vehicleSelected } from "../tripsSlice";
+import { formatVehicleLabel } from "@/features/vehicles/vehicleLabel";
 
 export function VehicleRangeControl({ disabled = false }: { disabled?: boolean }) {
   const dispatch = useDispatch<AppDispatch>();
@@ -32,7 +33,7 @@ export function VehicleRangeControl({ disabled = false }: { disabled?: boolean }
         >
           {vehicles.map((item) => (
             <MenuItem key={item.id} value={item.id} disabled={item.range_km <= 0}>
-              {item.name} · {item.model} ({item.range_km > 0 ? `${item.range_km} km` : "range unavailable"})
+              {formatVehicleLabel(item.name, item.model)} ({item.range_km > 0 ? `${item.range_km} km` : "range unavailable"})
             </MenuItem>
           ))}
         </Select>
@@ -41,6 +42,7 @@ export function VehicleRangeControl({ disabled = false }: { disabled?: boolean }
         <Alert severity="warning">Update the maximum range in My vehicles before planning a trip.</Alert>
       )}
       {vehicle && <Button
+        fullWidth
         variant="outlined"
         aria-haspopup="dialog"
         aria-expanded={Boolean(anchor)}

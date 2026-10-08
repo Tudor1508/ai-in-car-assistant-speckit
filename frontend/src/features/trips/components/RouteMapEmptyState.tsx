@@ -1,14 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { Alert, Box, Paper, Stack, Typography } from "@mui/material";
+import { Alert, Box, CircularProgress, Paper, Stack, Typography } from "@mui/material";
 import { AttributionControl, MapContainer, TileLayer } from "react-leaflet";
 
 const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
 const attribution = process.env.NEXT_PUBLIC_MAP_ATTRIBUTION;
 
-export default function RouteMapEmptyState() {
+export default function RouteMapEmptyState({ status = "idle" }: { status?: "idle" | "loading" | "failed" }) {
   const [tileFailed, setTileFailed] = useState(!tileUrl || !attribution);
+  const isLoading = status === "loading";
+  const title = isLoading
+    ? "Finding your routes…"
+    : status === "failed"
+      ? "Route generation failed"
+      : "Set a route";
+  const message = isLoading
+    ? "Comparing route options and checking your vehicle’s range."
+    : status === "failed"
+      ? "Review the error above, then try generating the route again."
+      : "The map preview will appear here after a route is generated. Enter a starting point and destination to begin.";
 
   return (
     <Box
@@ -70,15 +81,18 @@ export default function RouteMapEmptyState() {
           px: { xs: 2, sm: 3 },
           py: 1.5,
           borderRadius: 3,
-          bgcolor: "rgba(7, 19, 31, 0.92)",
-          color: "#eaf5ff",
+          bgcolor: "background.paper",
+          color: "text.primary",
+          border: "1px solid",
+          borderColor: "divider",
           textAlign: "center",
         }}
       >
-        <Stack spacing={0.5} sx={{ alignItems: "center" }}>
-          <Typography sx={{ fontWeight: 800 }}>Set a route</Typography>
-          <Typography variant="body2" sx={{ color: "#c2d3df" }}>
-            The map preview will appear here after a route is generated. Enter a starting point and destination to begin.
+        <Stack spacing={1} sx={{ alignItems: "center" }}>
+          {isLoading && <CircularProgress size={28} thickness={5} color="info" aria-label="Generating routes" />}
+          <Typography sx={{ fontWeight: 800 }}>{title}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            {message}
           </Typography>
         </Stack>
       </Paper>

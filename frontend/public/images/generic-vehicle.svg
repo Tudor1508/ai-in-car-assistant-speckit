@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
-  <title id="title">Generic vehicle illustration</title>
-  <desc id="desc">A simple illustration of a car, not a specific model.</desc>
+  <title id="title">No vehicle photo available yet</title>
+  <desc id="desc">A placeholder car illustration shown until a vehicle photo is uploaded.</desc>
   <rect width="640" height="360" rx="24" fill="#14283a"/>
   <path d="M109 236h422l-19-74c-5-18-20-31-39-35l-65-13-51-53c-11-11-25-17-41-17H241c-18 0-34 9-44 23l-48 69-27 13c-16 8-26 25-26 43v25c0 11 8 19 19 19h24Z" fill="#1e9fa7" stroke="#78e4e6" stroke-width="8" stroke-linejoin="round"/>
   <path d="m206 140 35-51c4-6 10-9 17-9h49v60H206Zm121 0V80h37c6 0 11 2 15 7l48 53H327Z" fill="#b8e7e8" opacity=".9"/>
@@ -9,5 +9,5 @@
   <circle cx="202" cy="237" r="17" fill="#95b6c1"/>
   <circle cx="451" cy="237" r="43" fill="#0a1724" stroke="#9edee0" stroke-width="9"/>
   <circle cx="451" cy="237" r="17" fill="#95b6c1"/>
-  <text x="320" y="321" fill="#c8dce7" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">Generic vehicle illustration · exact model unavailable</text>
+  <text x="320" y="321" fill="#c8dce7" font-family="Arial, sans-serif" font-size="19" text-anchor="middle">No vehicle photo available yet</text>
 </svg>

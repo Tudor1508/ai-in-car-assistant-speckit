@@ -10,12 +10,13 @@ test("empty garage has one Add action; vehicle errors and dialog remain usable o
     if (method === "GET") return route.fulfill({ json: { data: { vehicles } } });
     const body = route.request().postDataJSON() as Record<string, unknown>;
     if (method === "POST") {
-      const vehicle = { ...body, id: "v".repeat(32), created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" };
+      const vehicle = { ...body, name: `${body.brand} ${body.model}`, id: "v".repeat(32), created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" };
       vehicles.push(vehicle);
       return route.fulfill({ status: 201, json: { data: { vehicle } } });
     }
     if (method === "PATCH") {
-      const vehicle = { ...vehicles[0], ...body, updated_at: "2026-10-02T00:00:00Z" };
+      const merged = { ...vehicles[0], ...body };
+      const vehicle = { ...merged, name: `${merged.brand} ${merged.model}`, updated_at: "2026-10-02T00:00:00Z" };
       vehicles[0] = vehicle;
       return route.fulfill({ json: { data: { vehicle } } });
     }
@@ -30,13 +31,13 @@ test("empty garage has one Add action; vehicle errors and dialog remain usable o
   let dialog = page.getByRole("dialog", { name: "Add vehicle" });
   await expect(dialog).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
-  await dialog.getByLabel("Vehicle name").fill(" ");
+  await dialog.getByLabel("Brand").fill(" ");
   await dialog.getByLabel("Model").fill(" ");
   await dialog.getByLabel("Year").fill("2100");
   await dialog.getByLabel("Range (km)").fill("-2");
   await dialog.getByLabel("Mileage (km)").fill("1.5");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByLabel("Vehicle name")).toHaveAttribute("aria-invalid", "true");
+  await expect(dialog.getByLabel("Brand")).toHaveAttribute("aria-invalid", "true");
   await expect(dialog.getByLabel("Model")).toHaveAttribute("aria-invalid", "true");
   await expect(dialog.getByLabel("Year")).toHaveAttribute("aria-invalid", "true");
   await expect(dialog.getByLabel("Range (km)")).toHaveAttribute("aria-invalid", "true");
@@ -44,21 +45,21 @@ test("empty garage has one Add action; vehicle errors and dialog remain usable o
   expect(vehicles).toHaveLength(0);
 
   const thisYear = new Date().getFullYear();
-  await dialog.getByLabel("Vehicle name").fill("Audi");
+  await dialog.getByLabel("Brand").fill("Audi");
   await dialog.getByLabel("Model").fill("A5");
   await dialog.getByLabel("Year").fill(String(thisYear));
   await dialog.getByLabel("Range (km)").fill("400");
   await dialog.getByLabel("Mileage (km)").fill("10000");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Audi", { exact: true })).toBeVisible();
+  await expect(page.getByText("Audi A5", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Add vehicle/ })).toHaveCount(1);
 
-  await page.getByRole("button", { name: "Edit Audi" }).click();
+  await page.getByRole("button", { name: "Edit Audi A5" }).click();
   dialog = page.getByRole("dialog", { name: "Edit vehicle" });
   await expect(dialog.getByLabel("Model")).toHaveValue("A5");
   await dialog.getByLabel("Model").fill("A5 Sportback");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("A5 Sportback", { exact: true })).toBeVisible();
+  await expect(page.getByText("Audi A5 Sportback", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
 
@@ -68,12 +69,12 @@ test("vehicle dialog guards duplicate submission while pending", async ({ page }
   await page.route((url) => url.port === apiPort && url.pathname === "/vehicles", async (route) => {
     if (route.request().method() === "GET") return route.fulfill({ json: { data: { vehicles: [] } } });
     await new Promise((resolve) => setTimeout(resolve, 900));
-    return route.fulfill({ status: 201, json: { data: { vehicle: { id: "p".repeat(32), name: "Pending car", model: "P1", type: "combustion", year: 2020, range_km: 400, mileage_km: 1000, fuel_type: "petrol", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" } } } });
+    return route.fulfill({ status: 201, json: { data: { vehicle: { id: "p".repeat(32), name: "Pending P1", brand: "Pending", model: "P1", type: "combustion", year: 2020, range_km: 400, mileage_km: 1000, fuel_type: "petrol", created_at: "2026-10-01T00:00:00Z", updated_at: "2026-10-01T00:00:00Z" } } } });
   });
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /Add vehicle/ }).click();
   const dialog = page.getByRole("dialog", { name: "Add vehicle" });
-  await dialog.getByLabel("Vehicle name").fill("Pending car");
+  await dialog.getByLabel("Brand").fill("Pending");
   await dialog.getByLabel("Model").fill("P1");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Range (km)").fill("400");
@@ -83,5 +84,5 @@ test("vehicle dialog guards duplicate submission while pending", async ({ page }
   await expect(dialog.getByLabel("Model")).toBeDisabled();
   await expect(dialog.getByRole("button", { name: /Saving/ })).toBeDisabled();
   await expect(dialog.getByRole("button", { name: "Cancel" })).toBeDisabled();
-  await expect(page.getByText("Pending car", { exact: true })).toBeVisible();
+  await expect(page.getByText("Pending P1", { exact: true })).toBeVisible();
 });

@@ -207,15 +207,17 @@ export function TripPlanningDashboard() {
                 </Box>
                 <FavoriteRoutes canSave={trip.origin?.label === originText && trip.destination?.label === destinationText} disabled={trip.status === "loading"} />
                 {vehicles.items.length > 0 && (
-                  <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr auto" }, gap: 2, alignItems: "end" }}>
+                  <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: "1fr", gap: 1.5 }}>
                     <VehicleRangeControl disabled={trip.status === "loading"} />
-                    {trip.status === "loading" ? (
-                      <Button variant="outlined" color="warning" size="large" onClick={cancelPreview} startIcon={<CircularProgress size={18} color="inherit" aria-label="Route generation in progress" />} aria-busy="true" sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>Stop</Button>
-                    ) : (
-                      <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>
-                        Generate routes
-                      </Button>
-                    )}
+                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                      {trip.status === "loading" ? (
+                        <Button variant="outlined" color="warning" size="large" onClick={cancelPreview} startIcon={<CircularProgress size={18} color="inherit" aria-label="Route generation in progress" />} aria-busy="true" sx={{ minHeight: 56, px: 4, fontWeight: 800, width: { xs: "100%", sm: "auto" } }}>Stop</Button>
+                      ) : (
+                        <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null} sx={{ minHeight: 56, px: 4, fontWeight: 800, width: { xs: "100%", sm: "auto" } }}>
+                          Generate routes
+                        </Button>
+                      )}
+                    </Box>
                   </Box>
                 )}
               </CardContent>
@@ -323,7 +325,7 @@ export function TripPlanningDashboard() {
                 </Card>
               </Box>
             )}
-            {!displayedPreview && <RouteMapEmptyState />}
+            {!displayedPreview && <RouteMapEmptyState status={trip.status === "loading" ? "loading" : trip.status === "failed" ? "failed" : "idle"} />}
           </>
         )}
       </Box>
