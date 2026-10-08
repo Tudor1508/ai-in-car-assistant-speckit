@@ -10,6 +10,9 @@ export function listAdmin<T>(section: "users" | "vehicles" | "producers", query:
 export function deactivateAdminUser(id: string) {
   return apiRequest<{ status: "disabled" }>(`/admin/users/${encodeURIComponent(id)}`, "DELETE", { confirmation: "DELETE" });
 }
+export function deactivateAdminProducer(id: string) {
+  return apiRequest<{ status: "disabled" }>(`/admin/producers/${encodeURIComponent(id)}`, "DELETE", { confirmation: "DELETE" });
+}
 export function createAdminProducer(payload: { name: string; brand: string; email: string; password: string }) {
   return apiRequest<{ producer: Record<string, unknown> }>("/admin/producers", "POST", payload);
 }

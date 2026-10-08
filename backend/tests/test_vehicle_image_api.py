@@ -1,5 +1,6 @@
 from src.vehicles import routes, service
 from src.vehicles.image_provider import CommonsVehicleImage
+from fastapi.testclient import TestClient
 
 
 ORIGIN = "https://testserver"
@@ -197,3 +198,42 @@ def test_uploaded_photo_rejects_mime_mismatch_and_oversize(auth_client):
         f"/vehicles/{vehicle_id}/image", headers=headers, content=b"\x89PNG\r\n\x1a\n" + b"x" * (5 * 1024 * 1024)
     )
     assert oversized.status_code == 413
+
+
+def test_uploaded_image_content_is_private_to_authenticated_owner(auth_client, monkeypatch):
+    csrf = signed_in(auth_client, "private-image-owner@example.com")
+    monkeypatch.setattr(service, "resolve_vehicle_image", lambda *_args: None)
+    created = auth_client.post(
+        "/vehicles", headers={"Origin": ORIGIN, "X-CSRF-Token": csrf}, json=vehicle_payload()
+    )
+    assert created.status_code == 201
+    vehicle_id = created.json()["data"]["vehicle"]["id"]
+    png = __import__("base64").b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l5sAAAAASUVORK5CYII="
+    )
+    uploaded = auth_client.post(
+        f"/vehicles/{vehicle_id}/image",
+        headers={"Origin": ORIGIN, "X-CSRF-Token": csrf, "Content-Type": "image/png"},
+        content=png,
+    )
+    assert uploaded.status_code == 200
+    image_url = uploaded.json()["data"]["vehicle"]["image"]["image_url"]
+
+    owner_read = auth_client.get(image_url)
+    assert owner_read.status_code == 200
+    assert owner_read.content == png
+    assert owner_read.headers["cache-control"] == "private, no-store"
+    assert owner_read.headers["x-content-type-options"] == "nosniff"
+
+    with TestClient(auth_client.app, base_url=ORIGIN) as foreign_client:
+        signed_in(foreign_client, "different-image-account@example.com")
+        foreign_read = foreign_client.get(image_url)
+        assert foreign_read.status_code == 404
+        assert foreign_read.json()["error"]["code"] == "vehicle_not_found"
+        assert png not in foreign_read.content
+
+    with TestClient(auth_client.app, base_url=ORIGIN) as anonymous_client:
+        anonymous_read = anonymous_client.get(image_url)
+        assert anonymous_read.status_code == 401
+        assert anonymous_read.json()["error"]["code"] == "authentication_required"
+        assert png not in anonymous_read.content

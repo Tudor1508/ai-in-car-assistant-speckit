@@ -11,6 +11,8 @@ import {
   MenuItem,
   Stack,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import type { VehicleInput } from "../vehiclesApi";
 import { previewVehicleImage, type VehicleImagePreview as PreviewResult } from "../vehiclesApi";
@@ -44,11 +46,13 @@ type PreviewState = {
   image: VehicleImage | null;
 };
 
-function identityKey(name: string, model: string, year: string | number): string {
-  return [name, model, String(year)].map((value) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase()).join("|");
+function identityKey(brand: string, model: string, year: string | number): string {
+  return [brand, model, String(year)].map((value) => value.trim().replace(/\s+/g, " ").toLocaleLowerCase()).join("|");
 }
 
 export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [values, setValues] = useState<VehicleFormValues>(() => valuesFromVehicle(vehicle));
   const [errors, setErrors] = useState<VehicleFormErrors>({});
   const [serverError, setServerError] = useState("");
@@ -68,8 +72,8 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
     setDiscardUploadedPhoto(false);
   }, [vehicle, open]);
 
-  const currentIdentityKey = identityKey(values.name, values.model, values.year);
-  const savedIdentityKey = vehicle ? identityKey(vehicle.name, vehicle.model, vehicle.year) : "";
+  const currentIdentityKey = identityKey(values.brand || values.name, values.model, values.year);
+  const savedIdentityKey = vehicle ? identityKey(vehicle.brand || vehicle.name, vehicle.model, vehicle.year) : "";
   const identityUnchanged = !!vehicle && currentIdentityKey === savedIdentityKey;
   const previewIsCurrent = preview.queryKey === currentIdentityKey;
   const previewImage = previewIsCurrent ? preview.image : null;
@@ -81,10 +85,10 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
       return;
     }
 
-    const name = values.name.trim();
+    const brand = (values.brand.trim() || values.name.trim());
     const model = values.model.trim();
     const parsedYear = /^\d{4}$/.test(values.year) ? Number(values.year) : NaN;
-    const queryKey = identityKey(name, model, values.year);
+    const queryKey = identityKey(brand, model, values.year);
     const sameAsSaved = !!vehicle && queryKey === savedIdentityKey;
     const savedImage = sameAsSaved ? vehicle.image : null;
     const retainedUpload = vehicle?.image?.provider === "user_upload" && !discardUploadedPhoto;
@@ -99,7 +103,7 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
       image: savedImage,
     });
 
-    if (!name || !model || !Number.isInteger(parsedYear) || parsedYear < 1886 || parsedYear > new Date().getFullYear()) {
+    if (!brand || !model || !Number.isInteger(parsedYear) || parsedYear < 1886 || parsedYear > new Date().getFullYear()) {
       requestSequence.current += 1;
       return;
     }
@@ -109,7 +113,7 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
       setPreview((current) => current.queryKey === queryKey
         ? { ...current, status: "loading" }
         : current);
-      void previewVehicleImage(name, model, parsedYear).then((result: PreviewResult) => {
+      void previewVehicleImage(brand, model, parsedYear).then((result: PreviewResult) => {
         if (requestSequence.current !== sequence) return;
         setPreview({
           queryKey,
@@ -130,7 +134,7 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
       window.clearTimeout(timer);
       if (requestSequence.current === sequence) requestSequence.current += 1;
     };
-  }, [open, values.name, values.model, values.year, vehicle, savedIdentityKey, uploadFile, discardUploadedPhoto]);
+  }, [open, values.name, values.brand, values.model, values.year, vehicle, savedIdentityKey, uploadFile, discardUploadedPhoto]);
 
   function choosePhoto(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -146,7 +150,7 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
   }
 
   function change<K extends keyof VehicleFormValues>(key: K, value: VehicleFormValues[K]) {
-    if (key === "name" || key === "model" || key === "year") requestSequence.current += 1;
+    if (key === "name" || key === "brand" || key === "model" || key === "year") requestSequence.current += 1;
     setValues((current) => ({ ...current, [key]: value }));
     setErrors((current) => ({ ...current, [key]: undefined }));
   }
@@ -186,10 +190,11 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
   }
 
   return (
-    <Dialog open={open} onClose={pending ? undefined : onClose} fullWidth maxWidth="sm" aria-labelledby="vehicle-form-title">
-      <form onSubmit={submit} noValidate>
+    <Dialog open={open} onClose={pending ? undefined : onClose} fullWidth maxWidth="sm" fullScreen={fullScreen} aria-labelledby="vehicle-form-title"
+      slotProps={{ paper: { sx: { maxHeight: { xs: "100dvh", sm: "calc(100% - 64px)" }, m: { xs: 0, sm: 4 }, width: { xs: "100%", sm: "calc(100% - 64px)" } } } }}>
+      <form onSubmit={submit} noValidate aria-busy={pending}>
         <DialogTitle id="vehicle-form-title">{vehicle ? "Edit vehicle" : "Add vehicle"}</DialogTitle>
-        <DialogContent>
+        <DialogContent dividers sx={{ overflowX: "hidden", px: { xs: 2, sm: 3 } }}>
           <Stack spacing={2} sx={{ pt: 1 }}>
             {serverError && <Alert severity="error" role="alert">{serverError}</Alert>}
             {previewStatus === "loading" && <Alert severity="info" role="status">Searching Wikimedia Commons for a representative image…</Alert>}
@@ -208,22 +213,22 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
               {vehicle?.image?.provider === "user_upload" && !discardUploadedPhoto && <Button color="warning" onClick={() => { setUploadFile(null); setDiscardUploadedPhoto(true); }}>Discard uploaded photo</Button>}
               {discardUploadedPhoto && <Button onClick={() => setDiscardUploadedPhoto(false)}>Keep uploaded photo</Button>}
             </Stack>
-            <TextField label="Vehicle name" value={values.name} onChange={(event) => change("name", event.target.value)} error={!!errors.name} helperText={errors.name} required autoFocus />
-            <TextField label="Brand" value={values.brand} onChange={(event) => change("brand", event.target.value)} error={!!errors.brand} helperText={errors.brand ?? "Manufacturer brand, for example Tesla."} required />
-            <TextField label="Model" value={values.model} onChange={(event) => change("model", event.target.value)} error={!!errors.model} helperText={errors.model} required />
+            <TextField label="Vehicle name" value={values.name} onChange={(event) => change("name", event.target.value)} error={!!errors.name} helperText={errors.name} required autoFocus disabled={pending} />
+            <TextField label="Brand" value={values.brand} onChange={(event) => change("brand", event.target.value)} error={!!errors.brand} helperText={errors.brand ?? "Manufacturer brand, for example Tesla."} required disabled={pending} />
+            <TextField label="Model" value={values.model} onChange={(event) => change("model", event.target.value)} error={!!errors.model} helperText={errors.model} required disabled={pending} />
             <TextField select label="Type" value={values.type} onChange={(event) => {
               const type = event.target.value as VehicleFormValues["type"];
               setValues((current) => ({ ...current, type, fuel_type: type === "electric" ? "" : current.fuel_type || "petrol" }));
               setErrors((current) => ({ ...current, type: undefined, fuel_type: undefined }));
-            }}>
+            }} disabled={pending}>
               <MenuItem value="combustion">Combustion</MenuItem>
               <MenuItem value="electric">Electric</MenuItem>
             </TextField>
-            <TextField label="Year" type="number" value={values.year} onChange={(event) => change("year", event.target.value)} error={!!errors.year} helperText={errors.year} required slotProps={{ htmlInput: { min: 1886, max: new Date().getFullYear(), step: 1 } }} />
-            <TextField label="Range (km)" type="number" value={values.range_km} onChange={(event) => change("range_km", event.target.value)} error={!!errors.range_km} helperText={errors.range_km} required slotProps={{ htmlInput: { min: 0, step: 1 } }} />
-            <TextField label="Mileage (km)" type="number" value={values.mileage_km} onChange={(event) => change("mileage_km", event.target.value)} error={!!errors.mileage_km} helperText={errors.mileage_km} required slotProps={{ htmlInput: { min: 0, step: 1 } }} />
+            <TextField label="Year" type="number" value={values.year} onChange={(event) => change("year", event.target.value)} error={!!errors.year} helperText={errors.year} required disabled={pending} slotProps={{ htmlInput: { min: 1886, max: new Date().getFullYear(), step: 1 } }} />
+            <TextField label="Range (km)" type="number" value={values.range_km} onChange={(event) => change("range_km", event.target.value)} error={!!errors.range_km} helperText={errors.range_km} required disabled={pending} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
+            <TextField label="Mileage (km)" type="number" value={values.mileage_km} onChange={(event) => change("mileage_km", event.target.value)} error={!!errors.mileage_km} helperText={errors.mileage_km} required disabled={pending} slotProps={{ htmlInput: { min: 0, step: 1 } }} />
             {values.type === "combustion" ? (
-              <TextField select label="Fuel type" value={values.fuel_type} onChange={(event) => change("fuel_type", event.target.value as VehicleFormValues["fuel_type"])} error={!!errors.fuel_type} helperText={errors.fuel_type} required>
+              <TextField select label="Fuel type" value={values.fuel_type} onChange={(event) => change("fuel_type", event.target.value as VehicleFormValues["fuel_type"])} error={!!errors.fuel_type} helperText={errors.fuel_type} required disabled={pending}>
                 {Object.entries(fuelLabels).map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
               </TextField>
             ) : <TextField label="Fuel type" value="Not applicable" disabled />}

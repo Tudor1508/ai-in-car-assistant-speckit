@@ -134,11 +134,11 @@ description: "Implementation task list for vehicle image preview"
 
 ## Verification Results
 
-- [x] T025 Update the vehicle image model/API contracts and migration to persist `image_match_kind` (`exact` or `similar`) for durable UI labeling. (FR-003, FR-006, FR-008)
-- [x] T026 Cover compact model spelling, same-model results without/excluding year, exact-match preference, deterministic ties, and preview/garage labeling for similar matches. (FR-001, FR-002, FR-003, FR-006, FR-008)
+- [x] T025a Update the vehicle image model/API contracts and migration to persist `image_match_kind` (`exact` or `similar`) for durable UI labeling. (FR-003, FR-006, FR-008)
+- [x] T026a Cover compact model spelling, same-model results without/excluding year, exact-match preference, deterministic ties, and preview/garage labeling for similar matches. (FR-001, FR-002, FR-003, FR-006, FR-008)
 
-- Final feature/backend regression: `40 passed, 1 warning` across migration, Commons provider, image API, vehicle persistence/mutations, API conventions, and schema evolution tests.
-- Full backend suite (before the final Commons query/thumbnail fix): `193 passed, 3 failed`; the failures were unrelated live route-preview assertions in `tests/test_trip_preview.py` (`test_live_route_preview_includes_range_reachable_stops` and both `fastest`/`shortest` cases of `test_live_route_preview_reports_no_feasible_station_chain`). Route-planning files were not changed by this feature.
+- Historical feature/backend regression: `40 passed, 1 warning` across migration, Commons provider, image API, vehicle persistence/mutations, API conventions, and schema evolution tests.
+- Historical full backend suite (before the final Commons query/thumbnail fix): `193 passed, 3 failed`; the failures were unrelated live route-preview assertions in `tests/test_trip_preview.py` (`test_live_route_preview_includes_range_reachable_stops` and both `fastest`/`shortest` cases of `test_live_route_preview_reports_no_feasible_station_chain`). Route-planning files were not changed by this feature.
 - Live Commons check for the exact Audi values: matched the file and returned its CC BY 2.0 attribution metadata after the query/host fix.
 - Frontend `npm run type-check`: passed.
 - Focused Playwright `tests/vehicle-image-preview.spec.ts`: `1 passed`; covers stale lookup protection, attribution, persistence/reload, edit fallback, unavailable lookup, save during a pending lookup, broken-image fallback, keyboard focus, and mobile overflow.
@@ -147,7 +147,7 @@ description: "Implementation task list for vehicle image preview"
 
 ## Similar-match follow-up (2026-10-07)
 
-- [x] T027 Normalize Romanian BMW `Seria N` model input to Commons `N Series` terms without changing the saved vehicle text. (FR-001, FR-008)
+- [x] T027a Normalize Romanian BMW `Seria N` model input to Commons `N Series` terms without changing the saved vehicle text. (FR-001, FR-008)
 - Provider verification for `BMW` + `Seria 4` against a `BMW 4 Series 2020` fixture: passed; image classified exact with the entered year.
 
 - Updated `spec.md`, `research.md`, `data-model.md`, and `contracts/vehicle-image-api.md`: year remains required on the vehicle but is a soft image-ranking preference; a same-core-model result with missing/different year is labeled and persisted as `similar`.
@@ -155,5 +155,26 @@ description: "Implementation task list for vehicle image preview"
 - Backend focused run: `31 passed, 1 warning` across Commons matching, vehicle API, migration, persistence, and mutation/ownership tests.
 - Alembic `upgrade head` and downgrade to `0005_admin_dashboard` passed against an isolated temporary database.
 - Frontend `npm run type-check`: passed.
-- Playwright focused similar-match flow: `1 passed`; it verifies Tesla Model 3 preview labeling and the same label after save. A separate rerun of the longer existing preview scenario failed at its reload assertion (garage displayed zero vehicles); this remains an unresolved test-flow issue and is not counted as passing.
+- Playwright focused similar-match flow: `1 passed`; it verifies Tesla Model 3 preview labeling and the same label after save. A separate rerun at that time of the longer existing preview scenario failed at its reload assertion (garage displayed zero vehicles); that historical failure was not counted as passing. See the current checkout verification below for the latest full focused Playwright result.
 - A direct backend live Commons lookup from this workspace could not connect because the local network proxy refused the connection. No Commons token/subscription is needed; the backend needs outbound access to Wikimedia. The generic fallback remains in effect when it cannot connect.
+
+## Phase 7: Current Checkout Convergence Follow-ups
+
+**Purpose**: Resolve issues found when validating this feature against the integrated repository state. These tasks are new and remain unchecked until their acceptance evidence is recorded.
+
+- [x] **T030** Reconcile the Alembic revision graph so `alembic upgrade head` resolves to one unambiguous head after trip-history and vehicle-image migrations are integrated. Do not rewrite already-applied migration revisions. Add/update isolated-database coverage in `backend/tests/test_vehicle_image_migration.py`, `backend/tests/test_vehicle_persistence.py`, and `backend/tests/test_schema_evolution.py`; verify upgrade from `0005_admin_dashboard`, upgrade to the unified head, repeated upgrade, and downgrade paths without losing existing rows or either feature's columns. (FR-003, FR-008, FR-011, FR-016; plan: additive migration and migration compatibility)
+- [x] **T031** Reconcile the repeated task identifiers `T025`, `T026`, and `T027` in the verification and similar-match follow-up sections so each distinct task has a unique identifier. Preserve existing checked states and their historical evidence; do not use this documentation cleanup to imply a test passed. (Traceability and review requirements in the project constitution; tasks.md integrity)
+- [x] **T032** After T030 is resolved, rerun the complete planned vehicle-image backend/API/migration/schema suite, frontend type-check, and focused Playwright image-preview suite; update this file's verification record with the current checkout's actual outcomes, clearly separating historical runs, failures, and skipped checks. Do not mark this task complete unless each reported result is reproducible and no failed or skipped test is described as passed. (FR-001–FR-016, SC-001–SC-005; plan: testing and migration compatibility)
+
+### Current checkout convergence verification (2026-10-07)
+
+- Alembic heads before the merge: `0006_trip_history` and `0008_vehicle_image_upload`.
+- Added no-op merge revision `0009_merge_trip_vehicle_heads`, with both prior heads as parents; no existing revision was changed or removed.
+- `alembic heads` after the merge: single head `0009_merge_trip_vehicle_heads`.
+- Isolated database: `alembic upgrade head` succeeded; `alembic current` reported `0009_merge_trip_vehicle_heads (head)`.
+- Focused backend suite (vehicle image migration/provider/API, vehicle persistence/mutations, API conventions, schema evolution): `48 passed, 1 warning`.
+- Frontend `npm run type-check`: passed.
+- Focused Playwright `tests/vehicle-image-preview.spec.ts`: `3 passed`.
+
+- [x] **T033** Add API tests proving that an unauthenticated request and a different authenticated account cannot read a vehicle's private uploaded-image content; assert that neither request discloses image bytes, while the owner can still read the image with the required private/no-store headers. Keep the existing ownership and response contract; do not change application code in this task. (FR-016; constitution: server-side authorization and privacy)
+- T033 verification: `python -m pytest tests/test_vehicle_image_api.py tests/test_vehicle_mutations.py -q` — `19 passed, 1 warning`; verified owner content and privacy headers, foreign-account `404 vehicle_not_found`, anonymous `401 authentication_required`, and no image bytes in either rejected response.

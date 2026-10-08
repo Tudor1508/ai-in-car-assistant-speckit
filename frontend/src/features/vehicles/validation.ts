@@ -18,7 +18,7 @@ export function valuesFromVehicle(vehicle?: Vehicle): VehicleFormValues {
   return {
     name: vehicle?.name ?? "",
     model: vehicle?.model ?? "",
-    brand: vehicle?.brand ?? "",
+    brand: vehicle?.brand ?? vehicle?.name ?? "",
     type: vehicle?.type ?? "combustion",
     year: vehicle ? String(vehicle.year) : "",
     range_km: vehicle ? String(vehicle.range_km) : "",

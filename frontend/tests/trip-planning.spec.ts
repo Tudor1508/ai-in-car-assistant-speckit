@@ -111,7 +111,9 @@ async function prepareScenicFixtureScenario(page: Page, suffix: string, requeste
   await selectPlace(page, "Destinație", "Destination fixture");
   await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: /Fuel remaining|Battery remaining/ }).click();
   await page.getByLabel("Current level percentage").fill("100");
+  await page.keyboard.press("Escape");
   const previewResponse = page.waitForResponse((response) => response.url().endsWith("/trips/preview"));
   const previewButton = page.getByRole("button", { name: /Genereaz/ });
   await previewButton.click();
@@ -137,7 +139,9 @@ async function previewConfiguredRoute(page: Page, scenario: {
   await selectPlace(page, "Destination", scenario.destination);
   await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: /Fuel remaining|Battery remaining/ }).click();
   await page.getByLabel("Current level percentage").fill(scenario.percent);
+  await page.keyboard.press("Escape");
   const preference = scenario.preference ?? "fastest";
   const originInput = page.getByLabel("Starting point");
   const destinationInput = page.getByLabel("Destination");
@@ -176,14 +180,14 @@ async function previewConfiguredRoute(page: Page, scenario: {
 
 test("no-vehicle guidance, unresolved search, permission denial, and responsive keyboard flow", async ({ page, context }) => {
   await registerAndLogin(page, "no-vehicle");
-  await expect(page.getByText(/Adaugă un vehicul în My vehicles/)).toBeVisible();
+  await expect(page.getByText("Add a vehicle in My vehicles to preview a route. You can still save favorite locations now.")).toBeVisible();
   await expect(page.getByRole("main").getByRole("link", { name: "My vehicles" })).toBeVisible();
 
   const origin = page.getByLabel("Starting point");
   await origin.fill(unresolvedQuery);
-  await expect(page.getByText("Nu am găsit sugestii")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByText("No suggestions found")).toBeVisible({ timeout: 15000 });
   await expect(origin).toHaveValue(unresolvedQuery);
-  await page.getByRole("button", { name: "Reîncearcă căutarea" }).click();
+  await page.getByRole("button", { name: "Retry search" }).click();
   await expect(origin).toHaveValue(unresolvedQuery);
   await origin.focus();
   await page.keyboard.press("Control+A");
@@ -191,28 +195,28 @@ test("no-vehicle guidance, unresolved search, permission denial, and responsive 
   await expect(page.getByRole("option").first()).toBeVisible({ timeout: 15000 });
   await page.keyboard.press("Escape");
 
-  await context.grantPermissions([], { origin: page.url().replace(/\/$/, "") });
-  await page.getByRole("button", { name: "Folosește locația curentă" }).click();
-  await expect(page.getByRole("alert").filter({ hasText: /Nu am putut accesa locația|nu oferă acces/i })).toBeVisible();
+  await context.grantPermissions([], { origin: new URL(page.url()).origin });
+  await page.getByRole("button", { name: "Use current location" }).click();
+  await expect(page.getByRole("alert").filter({ hasText: /Could not access your location|Location access is unavailable/i })).toBeVisible();
   await expect(origin).toHaveValue(originQuery);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByLabel("Destinație")).toBeVisible();
+  await expect(page.getByLabel("Destination")).toBeVisible();
 });
 
 test("current location action uses configured browser coordinates after permission is granted", async ({ page, context }) => {
   await registerAndLogin(page, "current-location");
   await context.grantPermissions(["geolocation"]);
   await context.setGeolocation({ latitude: currentLatitude, longitude: currentLongitude });
-  await page.getByRole("button", { name: "Folosește locația curentă" }).click();
-  await expect(page.getByLabel("Starting point")).toHaveValue(new RegExp(`Locația mea \\(${currentLatitude.toFixed(4)}`));
+  await page.getByRole("button", { name: "Use current location" }).click();
+  await expect(page.getByLabel("Starting point")).toHaveValue(new RegExp(`My location \(${currentLatitude.toFixed(4)}`));
 });
 
 test("range-feasible live route shows map, metrics, and visible attribution", async ({ page }) => {
   await registerAndLogin(page, "range-feasible");
   await previewConfiguredRoute(page, { origin: originQuery, destination: destinationQuery, range: rangeKm, percent: currentPercent, vehicleSuffix: "range" });
-  await expect(page.getByText("Distanță", { exact: true })).toBeVisible({ timeout: 90000 });
-  await expect(page.getByText("Timp la volan", { exact: true })).toBeVisible();
+  await expect(page.getByText("Distance", { exact: true })).toBeVisible({ timeout: 90000 });
+  await expect(page.getByText("Driving time", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Hartă cu traseul planificat")).toBeVisible();
   await expect(page.locator(".leaflet-control-attribution")).toBeVisible();
 });
@@ -242,7 +246,9 @@ test("explicit Save trip persists an incomplete preview to Trip History without 
   await selectPlace(page, "Destination", "Destination fixture");
   await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: /Fuel remaining|Battery remaining/ }).click();
   await page.getByLabel("Current level percentage").fill("100");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /Genereaz/ }).click();
   await expect(page.getByRole("button", { name: "Save trip" })).toBeVisible();
   await expect(page.getByText(/indisponibil|incomplet/i).first()).toBeVisible();
@@ -290,7 +296,9 @@ test("explicit Save trip restores the selected complete route from persisted his
   await selectPlace(page, "Destination", "Destination fixture");
   await page.getByLabel("Vehicle").click();
   await page.getByRole("option").first().click();
+  await page.getByRole("button", { name: /Fuel remaining|Battery remaining/ }).click();
   await page.getByLabel("Current level percentage").fill("100");
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: /Genereaz/ }).click();
   await expect(page.getByRole("button", { name: "Save trip" })).toBeVisible();
   expect(saveCount).toBe(0);
