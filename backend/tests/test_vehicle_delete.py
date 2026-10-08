@@ -13,7 +13,7 @@ def logged_in(client, email):
     return login.json()["data"]["csrf_token"]
 
 
-def test_delete_removes_only_owned_vehicle_and_returns_status(auth_client, session_factory):
+def test_delete_archives_only_owned_vehicle_and_returns_status(auth_client, session_factory):
     csrf = logged_in(auth_client, "delete-owner@example.com")
     with session_factory() as db:
         owner = db.query(Account).filter_by(email="delete-owner@example.com").one()
@@ -35,3 +35,6 @@ def test_delete_removes_only_owned_vehicle_and_returns_status(auth_client, sessi
     assert foreign.json() == missing.json()
     with session_factory() as db:
         assert db.get(Vehicle, "b" * 32) is not None
+        archived = db.get(Vehicle, "a" * 32)
+        assert archived is not None
+        assert archived.archived_at is not None

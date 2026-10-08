@@ -24,7 +24,7 @@ def headers(csrf):
 
 def payload(**changes):
     vehicle = {
-        "name": " Daily driver ", "model": " Audi A5 ", "type": "combustion",
+        "name": " Daily driver ", "model": " Audi A5 ", "brand": " Audi ", "type": "combustion",
         "year": 2020, "range_km": 600, "mileage_km": 320000, "fuel_type": "diesel",
     }
     vehicle.update(changes)

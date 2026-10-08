@@ -55,9 +55,9 @@ export function ProfilePage() {
   }
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#081523", p: { xs: 2, sm: 5 } }}>
+      <Box sx={{ minHeight: "calc(100vh - 72px)", bgcolor: "background.default", color: "text.primary", p: { xs: 2, sm: 5 } }}>
       <Box sx={{ maxWidth: 760, mx: "auto" }}>
-        <Stack spacing={3} sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: "#102235", color: "white", borderRadius: 3 }}>
+        <Stack spacing={3} sx={{ p: { xs: 2.5, sm: 4 }, bgcolor: "background.paper", color: "text.primary", borderRadius: 3, border: 1, borderColor: "divider" }}>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>My profile</Typography>
           {error && <Alert severity="error" role="alert">{error}</Alert>}
           <ProfileEditor

@@ -23,6 +23,7 @@ export type Vehicle = {
   id: string;
   name: string;
   model: string;
+  brand: string | null;
   type: VehicleType;
   year: number;
   range_km: number;

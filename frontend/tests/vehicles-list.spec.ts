@@ -19,6 +19,7 @@ async function addVehicle(page: Page, name: string) {
   await page.getByRole("button", { name: /Adaug/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Nume vehicul").fill(name);
+  await dialog.getByLabel("Brand").fill("Test Brand");
   await dialog.getByLabel("Model").fill("Test model");
   await dialog.getByLabel("An").fill("2020");
   await dialog.getByLabel("Autonomie (km)").fill("500");

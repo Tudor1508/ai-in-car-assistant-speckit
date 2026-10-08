@@ -1,4 +1,5 @@
 import secrets
+from src.data.models.account import utc_now
 
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -35,6 +36,7 @@ def _vehicle_or_404(db: Session, owner_id: str, vehicle_id: str) -> Vehicle:
         select(Vehicle).where(
             Vehicle.id == vehicle_id,
             Vehicle.owner_account_id == owner_id,
+            Vehicle.archived_at.is_(None),
         )
     )
     if vehicle is None:
@@ -46,7 +48,7 @@ def list_owned_vehicles(db: Session, owner_id: str) -> list[Vehicle]:
     return list(
         db.scalars(
             select(Vehicle)
-            .where(Vehicle.owner_account_id == owner_id)
+            .where(Vehicle.owner_account_id == owner_id, Vehicle.archived_at.is_(None))
             .order_by(Vehicle.created_at, Vehicle.id)
         ).all()
     )
@@ -81,6 +83,7 @@ def update_owned_vehicle(
     candidate = {
         "name": vehicle.name,
         "model": vehicle.model,
+        "brand": vehicle.brand,
         "type": vehicle.type,
         "year": vehicle.year,
         "range_km": vehicle.range_km,
@@ -139,5 +142,5 @@ def set_owned_vehicle_image(
 
 def delete_owned_vehicle(db: Session, owner_id: str, vehicle_id: str) -> None:
     vehicle = _vehicle_or_404(db, owner_id, vehicle_id)
-    db.delete(vehicle)
+    vehicle.archived_at = utc_now()
     db.flush()

@@ -82,7 +82,7 @@ def save_trip_history(db: Session, owner_id: str, request: TripHistoryCreate) ->
         origin_label=request.origin.label, origin_latitude=origin_latitude, origin_longitude=origin_longitude,
         destination_label=request.destination.label, destination_latitude=destination_latitude, destination_longitude=destination_longitude,
         vehicle_id=vehicle.id,
-        vehicle_snapshot={"id": vehicle.id, "name": vehicle.name, "model": vehicle.model, "type": vehicle.type,
+        vehicle_snapshot={"id": vehicle.id, "name": vehicle.name, "model": vehicle.model, "brand": vehicle.brand, "type": vehicle.type,
             "current_level_percent": request.current_level_percent,
             "available_range_km": vehicle.range_km * request.current_level_percent / 100,
             "maximum_range_km": vehicle.range_km},
