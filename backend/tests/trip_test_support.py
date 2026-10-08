@@ -58,6 +58,7 @@ def create_test_vehicle(
         json={
             "name": inputs.vehicle_name,
             "model": inputs.vehicle_model,
+            "brand": "Test Brand",
             "type": selected_type,
             "year": inputs.vehicle_year,
             "range_km": range_km if range_km is not None else inputs.vehicle_range_km,

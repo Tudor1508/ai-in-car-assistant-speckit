@@ -12,6 +12,7 @@ class VehicleFields(BaseModel):
 
     name: str = Field(min_length=1, max_length=80)
     model: str = Field(min_length=1, max_length=80)
+    brand: str = Field(min_length=1, max_length=120)
     type: VehicleType
     year: StrictInt = Field(ge=1886)
     range_km: StrictInt = Field(ge=0)
@@ -27,6 +28,16 @@ class VehicleFields(BaseModel):
             raise ValueError("This field is required")
         if len(value) > 80:
             raise ValueError("Must be 80 characters or fewer")
+        return value
+
+    @field_validator("brand")
+    @classmethod
+    def trim_brand(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("This field is required")
+        if len(value) > 120:
+            raise ValueError("Must be 120 characters or fewer")
         return value
 
     @field_validator("image_file_title")
@@ -66,6 +77,7 @@ class VehiclePatch(BaseModel):
 
     name: str | None = Field(default=None, min_length=1, max_length=80)
     model: str | None = Field(default=None, min_length=1, max_length=80)
+    brand: str | None = Field(default=None, min_length=1, max_length=120)
     type: VehicleType | None = None
     year: StrictInt | None = Field(default=None, ge=1886)
     range_km: StrictInt | None = Field(default=None, ge=0)
@@ -84,6 +96,18 @@ class VehiclePatch(BaseModel):
             raise ValueError("This field is required")
         if len(value) > 80:
             raise ValueError("Must be 80 characters or fewer")
+        return value
+
+    @field_validator("brand")
+    @classmethod
+    def trim_brand(cls, value: str | None) -> str | None:
+        if value is None:
+            raise ValueError("This field cannot be null")
+        value = value.strip()
+        if not value:
+            raise ValueError("This field is required")
+        if len(value) > 120:
+            raise ValueError("Must be 120 characters or fewer")
         return value
 
     @field_validator("year")
@@ -145,6 +169,7 @@ class VehicleResponse(BaseModel):
     id: str
     name: str
     model: str
+    brand: str | None
     type: VehicleType
     year: int
     range_km: int

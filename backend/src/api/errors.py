@@ -49,6 +49,7 @@ def install_error_handlers(app: FastAPI) -> None:
             "confirmation_required": "Confirmation is required",
             "not_found": "The requested resource was not found",
             "vehicle_not_found": "The requested resource was not found",
+            "producer_brand_not_configured": "This Producer account does not have a brand configured",
             "validation_error": "Vehicle details do not meet the requirements",
             "route_not_found": "No drivable route could be calculated",
             "routing_provider_unavailable": "Route data is temporarily unavailable",

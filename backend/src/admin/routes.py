@@ -82,7 +82,7 @@ def create_producer(body: UserCreateProducer, response: Response, db: Session = 
 
 @router.get("/vehicles", response_model=SuccessEnvelope[dict], responses=common_error_responses())
 def vehicles(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100), name: str | None = None, model: str | None = None, type: Literal["combustion", "electric"] | None = None, year_from: int | None = None, year_to: int | None = None, range_km_from: int | None = None, range_km_to: int | None = None, mileage_km_from: int | None = None, mileage_km_to: int | None = None, fuel_type: Literal["petrol", "diesel", "lpg", "cng", "other"] | None = None, created_from: datetime | None = None, created_to: datetime | None = None, sort_by: Literal["name", "model", "type", "year", "range_km", "mileage_km", "fuel_type", "created_at"] = "created_at", sort_order: Literal["asc", "desc"] = "desc", db: Session = Depends(get_db), _admin: Account = Depends(require_admin)):
-    query = select(Vehicle)
+    query = select(Vehicle).where(Vehicle.archived_at.is_(None))
     if name: query = query.where(Vehicle.name.ilike(f"%{name}%"))
     if model: query = query.where(Vehicle.model.ilike(f"%{model}%"))
     if type: query = query.where(Vehicle.type == type)
@@ -96,8 +96,8 @@ def vehicles(page: int = Query(1, ge=1), page_size: int = Query(25, ge=1, le=100
     allowed = {"name": Vehicle.name, "model": Vehicle.model, "type": Vehicle.type, "year": Vehicle.year, "range_km": Vehicle.range_km, "mileage_km": Vehicle.mileage_km, "fuel_type": Vehicle.fuel_type, "created_at": Vehicle.created_at}
     ordering = allowed[sort_by].asc() if sort_order == "asc" else allowed[sort_by].desc()
     rows = db.scalars(query.order_by(ordering, Vehicle.id.asc()).offset((page - 1) * page_size).limit(page_size)).all()
-    count = db.scalar(select(func.count()).select_from(Vehicle)) or 0
-    groups = db.execute(select(Vehicle.type, func.count()).group_by(Vehicle.type)).all()
+    count = db.scalar(select(func.count()).select_from(Vehicle).where(Vehicle.archived_at.is_(None))) or 0
+    groups = db.execute(select(Vehicle.type, func.count()).where(Vehicle.archived_at.is_(None)).group_by(Vehicle.type)).all()
     stats = {"total": count, "by_type": {"combustion": 0, "electric": 0}}
     stats["by_type"].update(dict(groups))
     return success_envelope(page_response([vehicle_row(row) for row in rows], stats, page, page_size, total, "vehicles"))

@@ -57,6 +57,7 @@ async function addVehicle(page: Page, suffix: string, range: string, requestedTy
   await page.getByRole("button", { name: "Add vehicle" }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill(`${vehicleName} ${suffix}`);
+  await dialog.getByLabel("Brand").fill("Trip Test Brand");
   await dialog.getByLabel("Model").fill(vehicleModel);
   await dialog.getByLabel("Type", { exact: true }).click();
   await page.getByRole("option", { name: requestedType === "electric" ? "Electric" : "Combustion" }).click();

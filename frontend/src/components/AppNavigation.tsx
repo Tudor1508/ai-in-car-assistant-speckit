@@ -16,6 +16,10 @@ const links = [
   { href: "/vehicles", label: "My vehicles" },
   { href: "/profile", label: "Profile" },
 ];
+const producerLinks = [
+  { href: "/producer", label: "Dashboard" },
+  { href: "/producer/profile", label: "Profile" },
+];
 
 export function AppNavigation() {
   const pathname = usePathname();
@@ -23,7 +27,19 @@ export function AppNavigation() {
   const dispatch = useDispatch<AppDispatch>();
   const account = useSelector((state: RootState) => state.auth.account);
   const [error, setError] = useState("");
-  useEffect(() => { if (!account) void readCurrentAccount().then((current) => dispatch(accountLoaded(current))).catch(() => undefined); }, [account, dispatch]);
+  useEffect(() => {
+    let active = true;
+    if (!account) {
+      void readCurrentAccount().then((current) => {
+        if (!active) return;
+        dispatch(accountLoaded(current));
+        if (current.role === "producer") router.replace(pathname === "/profile" ? "/producer/profile" : "/producer");
+      }).catch(() => undefined);
+    } else if (account.role === "producer") {
+      router.replace(pathname === "/profile" ? "/producer/profile" : "/producer");
+    }
+    return () => { active = false; };
+  }, [account, dispatch, pathname, router]);
 
   async function signOut() {
     setError("");
@@ -45,7 +61,7 @@ export function AppNavigation() {
           <Box component="span" sx={{ color: "#58dced", mr: 1 }}>◉</Box> drivewise.
         </Typography>
         <Stack component="nav" aria-label="Main navigation" direction="row" sx={{ order: { xs: 3, md: 2 }, gap: { xs: 0, sm: 0.5 }, flex: { xs: "1 1 100%", md: "0 1 auto" }, width: { xs: "100%", md: "auto" }, maxWidth: "100%", minWidth: 0, boxSizing: "border-box", overflowX: { xs: "auto", md: "visible" }, justifyContent: { xs: "center", md: "flex-start" } }}>
-          {links.map((link) => {
+          {(account?.role === "producer" ? producerLinks : links).map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
               <Button key={link.href} component={Link} href={link.href} aria-current={active ? "page" : undefined}

@@ -209,6 +209,7 @@ export function VehicleForm({ open, vehicle, onClose, onSubmit }: Props) {
               {discardUploadedPhoto && <Button onClick={() => setDiscardUploadedPhoto(false)}>Keep uploaded photo</Button>}
             </Stack>
             <TextField label="Vehicle name" value={values.name} onChange={(event) => change("name", event.target.value)} error={!!errors.name} helperText={errors.name} required autoFocus />
+            <TextField label="Brand" value={values.brand} onChange={(event) => change("brand", event.target.value)} error={!!errors.brand} helperText={errors.brand ?? "Manufacturer brand, for example Tesla."} required />
             <TextField label="Model" value={values.model} onChange={(event) => change("model", event.target.value)} error={!!errors.model} helperText={errors.model} required />
             <TextField select label="Type" value={values.type} onChange={(event) => {
               const type = event.target.value as VehicleFormValues["type"];
