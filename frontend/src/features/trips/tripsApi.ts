@@ -77,3 +77,7 @@ export function saveFavoriteRoute(payload: {
 }): Promise<FavoriteSaveResult> {
   return apiRequest<FavoriteSaveResult>("/trips/favorites", "POST", payload);
 }
+
+export function deleteFavoriteRoute(favoriteId: string): Promise<{ status: "deleted" }> {
+  return apiRequest<{ status: "deleted" }>(`/trips/favorites/${encodeURIComponent(favoriteId)}`, "DELETE");
+}

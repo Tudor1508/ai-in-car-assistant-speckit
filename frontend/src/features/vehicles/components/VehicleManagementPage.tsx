@@ -17,6 +17,7 @@ import { authCleared } from "@/features/auth/authSlice";
 import { ApiClientError, setCsrfToken } from "@/lib/api/client";
 import { VehicleForm } from "./VehicleForm";
 import { VehicleImageDisplay } from "./VehicleImageDisplay";
+import { VehicleBrandLogo } from "./VehicleBrandLogo";
 import { VehicleDeleteDialog } from "./VehicleDeleteDialog";
 import {
   createVehicle,
@@ -133,19 +134,19 @@ export function VehicleManagementPage() {
   }
 
   return (
-    <Box sx={{ minHeight: "calc(100vh - 72px)", bgcolor: "#081523", color: "white", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
+    <Box sx={{ minHeight: "calc(100vh - 72px)", bgcolor: "background.default", color: "text.primary", px: { xs: 2, sm: 4 }, py: { xs: 3, md: 5 } }}>
       <Box sx={{ maxWidth: 1060, mx: "auto" }}>
-        <Box sx={{ mb: 3, p: { xs: 3, sm: 4 }, borderRadius: 4, background: "linear-gradient(120deg, #1a3040, #111a2a 75%)", border: "1px solid #283c4b" }}>
+        <Box sx={{ mb: 3, p: { xs: 3, sm: 4 }, borderRadius: 4, bgcolor: "background.paper", border: "1px solid", borderColor: "divider" }}>
       <Typography variant="overline" sx={{ color: "#51def0", letterSpacing: 2 }}>▣ YOUR GARAGE</Typography>
-          <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, fontSize: { xs: "2rem", sm: "3rem" } }}>My vehicles<span style={{ color: "#51def0" }}>.</span></Typography>
+          <Typography variant="h3" sx={{ fontWeight: 800, mt: 0.5, fontSize: { xs: "2rem", sm: "3rem" } }}>My vehicles<span style={{ color: "var(--mui-palette-primary-main)" }}>.</span></Typography>
           <Typography sx={{ mt: 1, maxWidth: 520 }}>Keep your vehicle details up to date in one place.</Typography>
         </Box>
-        <Card sx={{ bgcolor: "#0d1928", color: "white", border: "1px solid #283444", borderRadius: 4 }}>
+        <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4 }}>
           <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
             <Stack direction={{ xs: "column", sm: "row" }} sx={{ alignItems: { xs: "stretch", sm: "center" }, justifyContent: "space-between", gap: 2, mb: 2.5 }}>
               <Box>
-                <Typography ref={garageHeadingRef} id="garage-heading" tabIndex={-1} variant="h5" sx={{ fontWeight: 750, "&:focus-visible": { outline: "2px solid #58dced", outlineOffset: 4 } }}>My garage</Typography>
-                <Typography variant="body2" color="grey.400">{items.length} {items.length === 1 ? "vehicle" : "vehicles"} in your garage</Typography>
+                <Typography ref={garageHeadingRef} id="garage-heading" tabIndex={-1} variant="h5" sx={{ fontWeight: 750, "&:focus-visible": { outline: "2px solid", outlineColor: "primary.main", outlineOffset: 4 } }}>My garage</Typography>
+                <Typography variant="body2" color="text.secondary">{items.length} {items.length === 1 ? "vehicle" : "vehicles"} in your garage</Typography>
               </Box>
               <Stack direction="row" sx={{ gap: 1, flexWrap: "wrap" }}>
                 <Button variant="outlined" onClick={() => void refresh()} disabled={status === "loading"} sx={{ borderRadius: 5 }}>
@@ -159,18 +160,22 @@ export function VehicleManagementPage() {
             {status !== "loading" && items.length === 0 && !error && (
               <Box sx={{ textAlign: "center", py: 6 }}>
                 <Typography variant="h6">Your garage is empty</Typography>
-                <Typography color="grey.400" sx={{ mb: 2 }}>Add your first vehicle to keep its details handy.</Typography>
-                <Button variant="outlined" onClick={openCreate}>Add vehicle</Button>
+                <Typography color="text.secondary" sx={{ mb: 2 }}>Add your first vehicle to keep its details handy.</Typography>
               </Box>
             )}
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 2 }}>
               {items.map((vehicle) => (
-                <Card key={vehicle.id} variant="outlined" sx={{ color: "white", bgcolor: "#101e30", borderColor: "#2a3b50", borderRadius: 4, borderLeft: `3px solid ${vehicle.type === "electric" ? "#58deeb" : "#f3cf4b"}` }}>
+                <Card key={vehicle.id} variant="outlined" sx={{ color: "text.primary", bgcolor: "background.default", borderColor: "divider", borderRadius: 4, borderLeft: `3px solid ${vehicle.type === "electric" ? "#58deeb" : "#f3cf4b"}` }}>
                   <CardContent>
                     <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
-                        <Typography color="grey.300">{vehicle.model}</Typography>
+                        <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
+                          <VehicleBrandLogo brand={vehicle.brand ?? vehicle.name} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
+                            <Typography color="text.secondary">{vehicle.model}</Typography>
+                          </Box>
+                        </Stack>
                       </Box>
                       <Stack direction="row" sx={{ gap: 0.5 }}>
                         <Button size="small" onClick={() => openEdit(vehicle)} aria-label={`Edit ${vehicle.name}`}>Edit</Button>
@@ -207,8 +212,8 @@ export function VehicleManagementPage() {
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
-    <Box sx={{ minWidth: 0, bgcolor: "#202d40", border: "1px solid #354457", borderRadius: 3, px: 1.25, py: 1 }}>
-      <Typography variant="caption" color="grey.300" sx={{ display: "block" }}>{label}</Typography>
+    <Box sx={{ minWidth: 0, bgcolor: "action.hover", border: "1px solid", borderColor: "divider", borderRadius: 3, px: 1.25, py: 1 }}>
+      <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{label}</Typography>
       <Typography variant="body2" sx={{ fontWeight: 700, overflowWrap: "anywhere" }}>{value}</Typography>
     </Box>
   );

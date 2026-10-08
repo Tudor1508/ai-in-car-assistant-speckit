@@ -31,6 +31,62 @@ def test_trip_favorite_create_is_csrf_protected(auth_client: TestClient) -> None
     assert response.json()["error"]["code"] == "invalid_csrf"
 
 
+def test_trip_favorite_delete_requires_active_session(auth_client: TestClient) -> None:
+    response = auth_client.delete("/trips/favorites/" + "a" * 32)
+    assert response.status_code == 401
+
+
+def test_trip_favorite_delete_is_csrf_protected(auth_client: TestClient) -> None:
+    inputs = TripTestInputs.from_environment()
+    create_authenticated_test_account(auth_client, inputs)
+    response = auth_client.delete(
+        "/trips/favorites/" + "a" * 32,
+        headers={"Origin": str(auth_client.base_url).rstrip("/")},
+    )
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "invalid_csrf"
+
+
+def test_trip_favorite_delete_is_owner_scoped_and_does_not_reveal_foreign_ids(auth_client: TestClient) -> None:
+    inputs = TripTestInputs.from_environment()
+    _, owner_csrf = create_authenticated_test_account(auth_client, inputs)
+    origin, destination = live_pair(auth_client, inputs)
+    headers = {
+        "Origin": str(auth_client.base_url).rstrip("/"),
+        "X-CSRF-Token": owner_csrf,
+    }
+    created = auth_client.post(
+        "/trips/favorites", headers=headers,
+        json={"origin": origin, "destination": destination},
+    )
+    assert created.status_code == 201, created.text
+    favorite_id = created.json()["data"]["favorite"]["id"]
+
+    other_client = TestClient(auth_client.app, base_url=str(auth_client.base_url))
+    try:
+        _, other_csrf = create_authenticated_test_account(other_client, inputs)
+        other_headers = {
+            "Origin": str(other_client.base_url).rstrip("/"),
+            "X-CSRF-Token": other_csrf,
+        }
+        foreign_delete = other_client.delete(
+            f"/trips/favorites/{favorite_id}", headers=other_headers,
+        )
+        missing_delete = other_client.delete(
+            f"/trips/favorites/{'f' * 32}", headers=other_headers,
+        )
+        assert foreign_delete.status_code == missing_delete.status_code == 404
+        assert foreign_delete.json() == missing_delete.json()
+        assert other_client.get("/trips/favorites").json()["data"]["favorites"] == []
+    finally:
+        other_client.close()
+
+    deleted = auth_client.delete(f"/trips/favorites/{favorite_id}", headers=headers)
+    assert deleted.status_code == 200
+    assert deleted.json() == {"data": {"status": "deleted"}}
+    assert auth_client.get("/trips/favorites").json()["data"]["favorites"] == []
+
+
 def test_trip_favorite_is_persistent_private_and_idempotent(auth_client: TestClient) -> None:
     inputs = TripTestInputs.from_environment()
     _, csrf = create_authenticated_test_account(auth_client, inputs)

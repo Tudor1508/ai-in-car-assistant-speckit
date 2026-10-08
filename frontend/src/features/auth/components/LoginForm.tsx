@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useDispatch } from "react-redux";
 import type { AppDispatch } from "@/lib/store";
 import { accountLoaded } from "../authSlice";
-import { Alert, Button, Stack, TextField, Typography } from "@mui/material";
+import { Alert, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { AuthCard } from "./AuthCard";
 import { loginAccount, readCurrentAccount } from "../authApi";
 
@@ -42,11 +42,11 @@ export function LoginForm() {
       setError(cause instanceof Error ? cause.message : "The email or password is incorrect.");
     } finally { setBusy(false); }
   }
-  return <AuthCard title="Sign in"><Stack component="form" onSubmit={submit} spacing={2}>
-    <TextField name="email" label="Email" type="email" required autoComplete="email" />
-    <TextField name="password" label="Password" type="password" required autoComplete="current-password" />
+  return <AuthCard title="Sign in"><Stack component="form" onSubmit={submit} spacing={2} aria-busy={busy || checkingSession}>
+    <TextField name="email" label="Email" type="email" required autoComplete="email" disabled={busy || checkingSession} />
+    <TextField name="password" label="Password" type="password" required autoComplete="current-password" disabled={busy || checkingSession} />
     {error && <Alert severity="error" role="alert">{error}</Alert>}
-    <Button type="submit" variant="contained" disabled={busy || checkingSession}>Sign in</Button>
+    <Button type="submit" variant="contained" disabled={busy || checkingSession}>{busy || checkingSession ? <CircularProgress size={18} aria-label={checkingSession ? "Checking session" : "Signing in"} sx={{ mr: 1 }} /> : null}{checkingSession ? "Checking session…" : busy ? "Signing in…" : "Sign in"}</Button>
     <Typography sx={{ textAlign: "center" }}>New here? <Link href="/register">Create an account</Link></Typography>
   </Stack></AuthCard>;
 }

@@ -98,6 +98,7 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await page.keyboard.press("Tab");
   await expect(dialog.getByLabel("Model")).toBeFocused();
   await dialog.getByLabel("Vehicle name").fill("Audi");
+  await dialog.getByLabel("Brand").fill("Audi");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Model").fill("Obsolete Model");
   await expect.poll(() => requestedModels.includes("Obsolete Model")).toBeTruthy();
@@ -161,7 +162,13 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
 
 test("a same-model image without confirmed year is labeled similar in preview and garage", async ({ page }) => {
   await registerAndLogin(page, `vehicle-similar-image-${Date.now()}@example.com`);
+  await page.route("https://upload.wikimedia.org/**", (route) => route.fulfill({
+    status: 200,
+    contentType: "image/png",
+    body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l5sAAAAASUVORK5CYII=", "base64"),
+  }));
   let savedVehicle: Record<string, unknown> | null = null;
+  let submittedImageTitle: unknown;
   await page.route("http://localhost:8000/vehicles**", async (route) => {
     const requestUrl = new URL(route.request().url());
     const method = route.request().method();
@@ -175,6 +182,7 @@ test("a same-model image without confirmed year is labeled similar in preview an
     }
     if (method === "POST" || method === "PATCH") {
       const payload = route.request().postDataJSON() as Record<string, unknown>;
+      submittedImageTitle = payload.image_file_title;
       savedVehicle = {
         id: "vehicle-similar-image-test-id",
         ...payload,
@@ -192,12 +200,15 @@ test("a same-model image without confirmed year is labeled similar in preview an
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("Tesla");
+  await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
   await expect(dialog.getByText("Similar vehicle image; the exact model or year is not confirmed.")).toBeVisible();
   await dialog.getByLabel("Range (km)").fill("400");
   await dialog.getByLabel("Mileage (km)").fill("100000");
   await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  expect(submittedImageTitle).toBe(similarImage.file_title);
   await expect(page.getByText("Similar vehicle image; the exact model or year is not confirmed.")).toBeVisible();
   await expect(page.getByText("Tesla photographer")).toBeVisible();
 });
@@ -258,6 +269,7 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("Tesla");
+  await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Range (km)").fill("400");
@@ -286,4 +298,101 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
   await editDialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Photo by Jane Driver")).toBeVisible();
   expect(uploadCalls).toBe(1);
+});
+
+test("Add/Edit dialogs keep photo controls responsive and keyboard accessible", async ({ page }) => {
+  await registerAndLogin(page, `vehicle-image-dialog-ux-${Date.now()}@example.com`);
+
+  let savedVehicle: Record<string, unknown> | null = null;
+  await page.route("http://localhost:8000/vehicles**", async (route) => {
+    const url = new URL(route.request().url());
+    const method = route.request().method();
+    if (url.pathname.endsWith("/image-preview")) {
+      await fulfill(route, { status: "fallback", image: null });
+      return;
+    }
+    if (method === "GET") {
+      await fulfill(route, { vehicles: savedVehicle ? [savedVehicle] : [] });
+      return;
+    }
+    if (method === "POST" || method === "PATCH") {
+      const payload = route.request().postDataJSON() as Record<string, unknown>;
+      savedVehicle = {
+        id: "vehicle-image-dialog-ux-id",
+        ...payload,
+        image: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      await fulfill(route, { vehicle: savedVehicle }, method === "POST" ? 201 : 200);
+      return;
+    }
+    await fulfill(route, { status: "deleted" });
+  });
+
+  await page.goto("/vehicles");
+  const viewports = [375, 768, 1440];
+  for (const width of viewports) {
+    await page.setViewportSize({ width, height: 900 });
+    const addButton = page.getByRole("button", { name: /Add vehicle/i }).first();
+    await addButton.click();
+    const addDialog = page.getByRole("dialog", { name: "Add vehicle" });
+    await expect(addDialog).toBeVisible();
+    const bounds = await addDialog.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+
+    const uploadButton = addDialog.getByRole("button", { name: "Not your car in the image? Upload a photo" });
+    await uploadButton.focus();
+    await expect(uploadButton).toBeFocused();
+    await addDialog.getByLabel("Upload a photo of your vehicle").setInputFiles({
+      name: "my-car.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l5sAAAAASUVORK5CYII=", "base64"),
+    });
+    await expect(addDialog.getByText("Your uploaded vehicle photo")).toBeVisible();
+    const removePhotoButton = addDialog.getByRole("button", { name: "Remove selected photo" });
+    await expect(removePhotoButton).toBeVisible();
+    await uploadButton.focus();
+    await page.keyboard.press("Tab");
+    await expect(removePhotoButton).toBeFocused();
+    await removePhotoButton.click();
+
+    if (width === 375) {
+      await addDialog.getByRole("button", { name: "Save" }).click();
+      await expect(addDialog.getByLabel("Vehicle name")).toHaveAttribute("aria-invalid", "true");
+      await expect(addDialog.getByLabel("Model")).toHaveAttribute("aria-invalid", "true");
+      await expect(addDialog.getByLabel("Year")).toHaveAttribute("aria-invalid", "true");
+      await expect(addDialog.getByLabel("Range (km)")).toHaveAttribute("aria-invalid", "true");
+      await expect(addDialog.getByLabel("Mileage (km)")).toHaveAttribute("aria-invalid", "true");
+      await addDialog.getByLabel("Vehicle name").fill("Audi");
+      await addDialog.getByLabel("Model").fill("A5");
+      await addDialog.getByLabel("Year").fill("2020");
+      await addDialog.getByLabel("Range (km)").fill("600");
+      await addDialog.getByLabel("Mileage (km)").fill("12000");
+      await addDialog.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByRole("button", { name: "Edit Audi" })).toBeVisible();
+      await expect(addButton).toBeFocused();
+    } else {
+      await addDialog.getByRole("button", { name: "Cancel" }).click();
+      await expect(addButton).toBeFocused();
+    }
+
+    const editButton = page.getByRole("button", { name: "Edit Audi" });
+    await editButton.click();
+    const editDialog = page.getByRole("dialog", { name: "Edit vehicle" });
+    await expect(editDialog).toBeVisible();
+    const editBounds = await editDialog.boundingBox();
+    expect(editBounds).not.toBeNull();
+    expect(editBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(editBounds!.x + editBounds!.width).toBeLessThanOrEqual(width + 1);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+    const title = editDialog.getByRole("heading", { name: "Edit vehicle" });
+    await expect(title).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(editDialog).toBeHidden();
+    await expect(editButton).toBeFocused();
+  }
 });

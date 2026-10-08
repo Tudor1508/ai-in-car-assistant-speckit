@@ -22,5 +22,5 @@ export function SignOutButton({ onError }: { onError: (message: string) => void 
     }
   }
 
-  return <Button onClick={signOut}>Sign out</Button>;
+  return <Button onClick={signOut} variant="outlined" sx={{ borderRadius: 5, "&:focus-visible": { outline: "2px solid currentColor", outlineOffset: 2 } }}>Log out</Button>;
 }

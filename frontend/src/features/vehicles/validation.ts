@@ -4,6 +4,7 @@ import type { Vehicle } from "./vehiclesSlice";
 export type VehicleFormValues = {
   name: string;
   model: string;
+  brand: string;
   type: "combustion" | "electric";
   year: string;
   range_km: string;
@@ -17,6 +18,7 @@ export function valuesFromVehicle(vehicle?: Vehicle): VehicleFormValues {
   return {
     name: vehicle?.name ?? "",
     model: vehicle?.model ?? "",
+    brand: vehicle?.brand ?? vehicle?.name ?? "",
     type: vehicle?.type ?? "combustion",
     year: vehicle ? String(vehicle.year) : "",
     range_km: vehicle ? String(vehicle.range_km) : "",
@@ -40,8 +42,10 @@ export function validateVehicleForm(values: VehicleFormValues): {
   const errors: VehicleFormErrors = {};
   const name = values.name.trim();
   const model = values.model.trim();
+  const brand = values.brand.trim();
   if (!name || name.length > 80) errors.name = "Enter a name between 1 and 80 characters.";
   if (!model || model.length > 80) errors.model = "Enter a model between 1 and 80 characters.";
+  if (!brand || brand.length > 120) errors.brand = "Enter a brand between 1 and 120 characters.";
   const year = /^\d{4}$/.test(values.year) ? Number(values.year) : NaN;
   if (!Number.isInteger(year) || year < 1886 || year > new Date().getFullYear()) {
     errors.year = `Enter a year between 1886 and ${new Date().getFullYear()}.`;
@@ -57,6 +61,7 @@ export function validateVehicleForm(values: VehicleFormValues): {
     payload: {
       name,
       model,
+      brand,
       type: values.type,
       year,
       range_km: range_km!,

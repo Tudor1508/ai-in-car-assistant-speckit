@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Alert,
   Button,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -28,14 +29,17 @@ type AccountSecurityDialogsProps = {
 export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) {
   const [action, setAction] = useState<SecurityAction | null>(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
   function close() {
+    if (busy) return;
     setAction(null);
     setError("");
   }
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy) return;
     setError("");
     const values = Object.fromEntries(new FormData(event.currentTarget).entries());
     if (action === "password") {
@@ -49,6 +53,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
         return;
       }
     }
+    setBusy(true);
     try {
       if (action === "password") {
         await changeCurrentPassword(values as PasswordChange);
@@ -60,6 +65,8 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
       onDone();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "The operation failed.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -73,7 +80,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
         <DialogTitle id="account-security-title">
           {action === "password" ? "Change password" : "Deactivate account"}
         </DialogTitle>
-        <form key={action ?? "closed"} onSubmit={submit}>
+        <form key={action ?? "closed"} onSubmit={submit} aria-busy={busy}>
           <DialogContent>
             <Stack spacing={2}>
               {error && <Alert severity="error" role="alert" aria-live="assertive">{error}</Alert>}
@@ -83,6 +90,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
                 type="password"
                 autoComplete="current-password"
                 required
+                disabled={busy}
               />
               {action === "password" ? (
                 <>
@@ -92,6 +100,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
                     type="password"
                     autoComplete="new-password"
                     required
+                    disabled={busy}
                     helperText="At least 8 characters, an uppercase letter, a number, and a special character."
                   />
                   <TextField
@@ -100,6 +109,7 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
                     type="password"
                     autoComplete="new-password"
                     required
+                    disabled={busy}
                   />
                 </>
               ) : (
@@ -107,13 +117,17 @@ export function AccountSecurityDialogs({ onDone }: AccountSecurityDialogsProps) 
                   name="confirmation"
                   label="Type DELETE to confirm"
                   required
+                  disabled={busy}
                 />
               )}
             </Stack>
           </DialogContent>
           <DialogActions>
-            <Button onClick={close}>Cancel</Button>
-            <Button type="submit" color="error">Confirm</Button>
+            <Button onClick={close} disabled={busy}>Cancel</Button>
+            <Button type="submit" color="error" disabled={busy}>
+              {busy ? <CircularProgress size={18} aria-label="Processing request" sx={{ mr: 1 }} /> : null}
+              {busy ? "Processing…" : "Confirm"}
+            </Button>
           </DialogActions>
         </form>
       </Dialog>

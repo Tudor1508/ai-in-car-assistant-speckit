@@ -1,16 +1,16 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box } from "@mui/material";
-import { divIcon, svg, type Polyline as LeafletPolyline } from "leaflet";
+import { Alert, Box, Stack, Typography } from "@mui/material";
+import { divIcon, type Polyline as LeafletPolyline } from "leaflet";
 import { AttributionControl, CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMap } from "react-leaflet";
 import type { LatLngBoundsExpression } from "leaflet";
 import type { TripRoutePreview, PlaceSelection } from "../tripsSlice";
 
-type Props = { preview: TripRoutePreview; origin: PlaceSelection; destination: PlaceSelection; height?: number | string; mapLabel?: string };
+type Props = { preview: TripRoutePreview; origin: PlaceSelection; destination: PlaceSelection; height?: number | string; mapLabel?: string; fullscreen?: boolean };
 const tileUrl = process.env.NEXT_PUBLIC_MAP_TILE_URL;
 const attribution = process.env.NEXT_PUBLIC_MAP_ATTRIBUTION;
-const markerRenderer = svg({ padding: 0.5 });
+const attributionText = attribution?.replace(/<[^>]*>/g, " ").replace(/&copy;?/gi, "©").replace(/&amp;/gi, "&").replace(/\s+/g, " ").trim();
 
 function poiIcon(kind: "fuel" | "charging" | "attraction" | "restaurant") {
   const emoji = { fuel: "⛽", charging: "⚡", attraction: "🏛️", restaurant: "🍽️" }[kind];
@@ -21,6 +21,15 @@ function poiIcon(kind: "fuel" | "charging" | "attraction" | "restaurant") {
 function FitRoute({ bounds }: { bounds: LatLngBoundsExpression }) {
   const map = useMap();
   useEffect(() => { map.fitBounds(bounds, { padding: [28, 28], maxZoom: 13 }); }, [bounds, map]);
+  return null;
+}
+
+function ResizeMap({ active }: { active: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => map.invalidateSize({ pan: false }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [active, map]);
   return null;
 }
 
@@ -104,7 +113,7 @@ function AnimatedRangeLine({ positions }: { positions: [number, number][] }) {
   return <Polyline ref={lineRef} positions={positions} pathOptions={{ color: "#f97316", weight: 8, opacity: 1, lineCap: "round", lineJoin: "round", className: "current-range-route" }} />;
 }
 
-export default function RouteMap({ preview, origin, destination, height, mapLabel = "Map showing the planned route" }: Props) {
+export default function RouteMap({ preview, origin, destination, height, mapLabel = "Map showing the planned route", fullscreen = false }: Props) {
   const [tileFailed, setTileFailed] = useState(!tileUrl || !attribution);
   const points = preview.route.geometry.coordinates.map(([longitude, latitude]) => [latitude, longitude] as [number, number]);
   const rangePositions = useMemo(
@@ -131,49 +140,50 @@ export default function RouteMap({ preview, origin, destination, height, mapLabe
     : 0;
 
   return (
-    <Box sx={{ height: height ?? { xs: 320, md: 460 }, borderRadius: 3, overflow: "hidden", border: "1px solid #33495b", position: "relative" }} role="region" aria-label={mapLabel}>
+    <Box sx={{ height: height ?? { xs: 340, md: 540 }, borderRadius: fullscreen ? 0 : 3, overflow: "hidden", border: fullscreen ? "none" : "1px solid #33495b", position: "relative" }} role="region" aria-label={mapLabel}>
       {tileUrl && attribution && !tileFailed && <MapContainer center={center} zoom={7} scrollWheelZoom style={{ height: "100%", width: "100%" }} attributionControl={false} preferCanvas>
         <TileLayer url={tileUrl} attribution={attribution} keepBuffer={0} updateWhenIdle={false} updateWhenZooming={false} eventHandlers={{ tileerror: () => setTileFailed(true) }} />
         <AttributionControl position="bottomright" prefix={false} />
+        <ResizeMap active={fullscreen} />
         {points.length > 1 && <Polyline positions={points} pathOptions={{ color: "#24c9df", weight: 5, opacity: 0.9 }} />}
         <AnimatedRangeLine positions={rangePositions} />
         <Marker position={[origin.latitude, origin.longitude]} icon={endpointIcon("start", initialBearing)} keyboard title={`Plecare: ${origin.label}`}>
-          <Popup>Plecare: {origin.label}</Popup>
+          <Popup>Origin: {origin.label}</Popup>
         </Marker>
         <Marker position={[destination.latitude, destination.longitude]} icon={endpointIcon("finish")} keyboard title={`Destinație: ${destination.label}`}>
-          <Popup>Destinație: {destination.label}</Popup>
+          <Popup>Destination: {destination.label}</Popup>
         </Marker>
         {preview.stops.map((stop) => (
           <Fragment key={`${stop.sequence}-${stop.provider_id ?? stop.latitude}`}>
-            <CircleMarker center={[stop.latitude, stop.longitude]} radius={6} renderer={markerRenderer} pathOptions={{ color: "#fff", fillColor: stop.station_type === "charging" ? "#eab308" : "#dc2626", fillOpacity: 1, className: `energy-stop-marker energy-stop-type-${stop.station_type} energy-stop-sequence-${stop.sequence}` }}>
-              <Tooltip direction="top">Oprirea {stop.sequence}: {stop.name ?? (stop.station_type === "charging" ? "Statie de incarcare" : "Benzinarie")}</Tooltip>
+            <CircleMarker center={[stop.latitude, stop.longitude]} radius={6} pathOptions={{ color: "#fff", fillColor: stop.station_type === "charging" ? "#eab308" : "#dc2626", fillOpacity: 1, className: `energy-stop-marker energy-stop-type-${stop.station_type} energy-stop-sequence-${stop.sequence}` }}>
+              <Tooltip direction="top">Stop {stop.sequence}: {stop.name ?? (stop.station_type === "charging" ? "Charging station" : "Fuel station")}</Tooltip>
             </CircleMarker>
             <Marker position={[stop.latitude, stop.longitude]} icon={poiIcon(stop.station_type)} keyboard title={stop.name ?? (stop.station_type === "charging" ? "Statie de incarcare" : "Benzinarie")} />
           </Fragment>
         ))}
         {preview.feasibility.first_unreachable_stop && (() => {
           const stop = preview.feasibility.first_unreachable_stop!;
-          const title = stop.name ?? (stop.station_type === "charging" ? "Prima stație de încărcare în afara autonomiei" : "Prima benzinărie în afara autonomiei");
-          const extra = preview.feasibility.additional_range_km?.toLocaleString("ro-RO", { maximumFractionDigits: 1 }) ?? "?";
+          const title = stop.name ?? (stop.station_type === "charging" ? "First charging station beyond range" : "First fuel station beyond range");
+          const extra = preview.feasibility.additional_range_km?.toLocaleString("en-US", { maximumFractionDigits: 1 }) ?? "?";
           return <Fragment key={`unreachable-${stop.provider_id ?? stop.latitude}`}>
-            <CircleMarker center={[stop.latitude, stop.longitude]} radius={11} renderer={markerRenderer} pathOptions={{ color: "#facc15", weight: 4, fillColor: stop.station_type === "charging" ? "#eab308" : "#dc2626", fillOpacity: 1, className: "energy-stop-unreachable" }}>
-              <Tooltip direction="top">{title} · ai nevoie de încă {extra} km autonomie</Tooltip>
+            <CircleMarker center={[stop.latitude, stop.longitude]} radius={11} pathOptions={{ color: "#facc15", weight: 4, fillColor: stop.station_type === "charging" ? "#eab308" : "#dc2626", fillOpacity: 1, className: "energy-stop-unreachable" }}>
+              <Tooltip direction="top">{title} · {extra} km of additional range needed</Tooltip>
             </CircleMarker>
-            <Marker position={[stop.latitude, stop.longitude]} icon={poiIcon(stop.station_type)} keyboard title={`${title} · încă ${extra} km autonomie necesară`} />
+            <Marker position={[stop.latitude, stop.longitude]} icon={poiIcon(stop.station_type)} keyboard title={`${title} · ${extra} km of additional range needed`} />
           </Fragment>;
         })()}
         {(preview.attractions ?? []).map((attraction) => (
           <Fragment key={`attraction-${attraction.sequence}`}>
-            <CircleMarker center={[attraction.latitude, attraction.longitude]} radius={6} renderer={markerRenderer} pathOptions={{ color: "#fff", fillColor: "#6b7280", fillOpacity: 1, className: `tourist-attraction-marker tourist-category-${attraction.category} tourist-sequence-${attraction.sequence}` }}>
-              <Tooltip direction="top">Atractia {attraction.sequence}: {attraction.name ?? attraction.category}</Tooltip>
+            <CircleMarker center={[attraction.latitude, attraction.longitude]} radius={6} pathOptions={{ color: "#fff", fillColor: "#6b7280", fillOpacity: 1, className: `tourist-attraction-marker tourist-category-${attraction.category} tourist-sequence-${attraction.sequence}` }}>
+              <Tooltip direction="top">Attraction {attraction.sequence}: {attraction.name ?? attraction.category}</Tooltip>
             </CircleMarker>
-            <Marker position={[attraction.latitude, attraction.longitude]} icon={poiIcon("attraction")} keyboard title={attraction.name ?? "Atractie turistica"} />
+            <Marker position={[attraction.latitude, attraction.longitude]} icon={poiIcon("attraction")} keyboard title={attraction.name ?? "Tourist attraction"} />
           </Fragment>
         ))}
         {(preview.restaurants ?? []).map((restaurant) => (
           <Fragment key={`restaurant-${restaurant.sequence}`}>
-            <CircleMarker center={[restaurant.latitude, restaurant.longitude]} radius={6} renderer={markerRenderer} pathOptions={{ color: "#fff", fillColor: "#a855f7", fillOpacity: 1, className: `restaurant-marker restaurant-sequence-${restaurant.sequence}` }}>
-              <Tooltip direction="top">Restaurant {restaurant.sequence}: {restaurant.name ?? "Restaurant recomandat"}</Tooltip>
+            <CircleMarker center={[restaurant.latitude, restaurant.longitude]} radius={6} pathOptions={{ color: "#fff", fillColor: "#a855f7", fillOpacity: 1, className: `restaurant-marker restaurant-sequence-${restaurant.sequence}` }}>
+              <Tooltip direction="top">Restaurant {restaurant.sequence}: {restaurant.name ?? "Recommended restaurant"}</Tooltip>
             </CircleMarker>
             <Marker position={[restaurant.latitude, restaurant.longitude]} icon={poiIcon("restaurant")} keyboard title={restaurant.name ?? "Restaurant recomandat"} />
           </Fragment>
@@ -181,7 +191,12 @@ export default function RouteMap({ preview, origin, destination, height, mapLabe
         <FitRoute bounds={bounds} />
       </MapContainer>
       }
-      {tileFailed && <Alert severity="warning" role="status" sx={{ position: "absolute", inset: 0, zIndex: 1000, borderRadius: 0, alignItems: "center", justifyContent: "center", bgcolor: "rgba(16,34,53,.94)" }}>The route map is temporarily unavailable. Trip details are still available.</Alert>}
+      {tileFailed && <Alert severity="warning" role="status" sx={{ position: "absolute", inset: 0, zIndex: 1000, borderRadius: 0, alignItems: "center", justifyContent: "center", bgcolor: "rgba(16,34,53,.94)" }}>
+        <Stack spacing={1} sx={{ textAlign: "center" }}>
+          <Typography color="inherit">The route map is temporarily unavailable. Trip details are still available.</Typography>
+          {attributionText && <Typography variant="caption" aria-label="Map attribution">{attributionText}</Typography>}
+        </Stack>
+      </Alert>}
     </Box>
   );
 }

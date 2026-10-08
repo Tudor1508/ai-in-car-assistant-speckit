@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Response
 from sqlalchemy.orm import Session
 
 from src.api.responses import (
@@ -22,6 +22,7 @@ from src.trips.schemas import (
 	TripHistoryCreate, TripHistoryCreated, TripHistoryCollection,
 )
 from src.trips.service import (
+    delete_owned_favorite_route,
 	list_favorite_routes,
 	preview_owned_trip,
 	save_favorite_route,
@@ -135,3 +136,18 @@ def post_favorite_route(
 	favorite, created = save_favorite_route(db, account.id, body)
 	response.status_code = 201 if created else 200
 	return success_envelope({"favorite": favorite.model_dump(mode="json")})
+
+
+@router.delete(
+	"/favorites/{favorite_id}",
+	response_model=SuccessEnvelope[dict],
+	responses=common_error_responses(),
+)
+def remove_favorite_route(
+	favorite_id: Annotated[str, Path(min_length=32, max_length=32, pattern="^[0-9a-f]{32}$")],
+	db: Session = Depends(get_db),
+	account: Account = Depends(require_account),
+	_csrf=Depends(require_csrf),
+):
+	delete_owned_favorite_route(db, account.id, favorite_id)
+	return success_envelope({"status": "deleted"})
