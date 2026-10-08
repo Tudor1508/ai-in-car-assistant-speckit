@@ -14,6 +14,7 @@ class Vehicle(Base):
         CheckConstraint("year >= 1886", name="ck_vehicles_year_min"),
         CheckConstraint("range_km >= 0", name="ck_vehicles_range_nonnegative"),
         CheckConstraint("mileage_km >= 0", name="ck_vehicles_mileage_nonnegative"),
+        CheckConstraint("brand IS NULL OR length(trim(brand)) BETWEEN 1 AND 120", name="ck_vehicles_brand_trimmed_length"),
         CheckConstraint(
             "(type = 'combustion' AND fuel_type IN ('petrol', 'diesel', 'lpg', 'cng', 'other')) "
             "OR (type = 'electric' AND fuel_type IS NULL)",
@@ -38,6 +39,7 @@ class Vehicle(Base):
             name="ck_vehicles_image_metadata_complete",
         ),
         Index("ix_vehicles_owner_created", "owner_account_id", "created_at", "id"),
+        Index("ix_vehicles_brand_archived_created", "brand", "archived_at", "created_at"),
     )
 
     id: Mapped[str] = mapped_column(String(32), primary_key=True)
@@ -46,6 +48,7 @@ class Vehicle(Base):
     )
     name: Mapped[str] = mapped_column(String(80), nullable=False)
     model: Mapped[str] = mapped_column(String(80), nullable=False)
+    brand: Mapped[str | None] = mapped_column(String(120), nullable=True)
     type: Mapped[str] = mapped_column(String(16), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     range_km: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -67,6 +70,7 @@ class Vehicle(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utc_now, onupdate=utc_now
     )
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     @property
     def image(self) -> dict[str, str] | None:

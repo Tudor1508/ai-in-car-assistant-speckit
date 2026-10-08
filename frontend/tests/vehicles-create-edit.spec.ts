@@ -20,6 +20,7 @@ async function addCombustionVehicle(page: Page) {
   await page.getByRole("button", { name: /add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("Daily driver");
+  await dialog.getByLabel("Brand").fill("Audi");
   await dialog.getByLabel("Model").fill("Audi A5");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Range (km)").fill("600");
@@ -40,6 +41,7 @@ test("user can add, edit, reload, and view an electric car", async ({ page }) =>
   await page.getByRole("button", { name: /add vehicle/i }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("City car");
+  await dialog.getByLabel("Brand").fill("Drivewise");
   await dialog.getByLabel("Model").fill("EV One");
   await dialog.getByRole("combobox", { name: "Type", exact: true }).click();
   await page.getByRole("option", { name: "Electric" }).click();
@@ -61,6 +63,7 @@ test("vehicle form identifies invalid fields and does not save them", async ({ p
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill(" ");
   await dialog.getByLabel("Model").fill("Model");
+  await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Year").fill("2100");
   await dialog.getByLabel("Range (km)").fill("-2");
   await dialog.getByLabel("Mileage (km)").fill("1.5");
@@ -77,6 +80,7 @@ test("failed create and edit preserve form input and vehicle state for retry", a
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const createDialog = page.getByRole("dialog");
   await createDialog.getByLabel("Vehicle name").fill("Daily driver");
+  await createDialog.getByLabel("Brand").fill("Audi");
   await createDialog.getByLabel("Model").fill("Audi A5");
   await createDialog.getByLabel("Year").fill("2020");
   await createDialog.getByLabel("Range (km)").fill("600");

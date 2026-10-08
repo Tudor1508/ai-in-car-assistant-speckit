@@ -30,7 +30,7 @@ def create_user_and_vehicle(client: TestClient):
     login = client.post("/auth/login", headers={"Origin": origin, "X-CSRF-Token": bootstrap}, json={"email": email, "password": credentials["password"]})
     csrf = login.json()["data"]["csrf_token"]
     vehicle_response = client.post("/vehicles", headers={"Origin": origin, "X-CSRF-Token": csrf}, json={
-        "name": "History Car", "model": "Test", "type": "electric", "year": 2024,
+        "name": "History Car", "model": "Test", "brand": "Test Brand", "type": "electric", "year": 2024,
         "range_km": 400, "mileage_km": 12000, "fuel_type": None,
     })
     assert vehicle_response.status_code == 201, vehicle_response.text

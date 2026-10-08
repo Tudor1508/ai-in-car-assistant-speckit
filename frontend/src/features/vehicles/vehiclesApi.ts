@@ -1,7 +1,8 @@
 import { apiGetBlob, apiRequest, apiUploadFile, ApiClientError } from "@/lib/api/client";
 import type { Vehicle, VehicleImage } from "./vehiclesSlice";
 
-export type VehicleInput = Omit<Vehicle, "id" | "created_at" | "updated_at" | "image"> & {
+export type VehicleInput = Omit<Vehicle, "id" | "created_at" | "updated_at" | "image" | "brand"> & {
+  brand: string;
   image_file_title?: string | null;
   discard_uploaded_image?: boolean;
 };

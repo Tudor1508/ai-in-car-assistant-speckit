@@ -46,6 +46,7 @@ def vehicle_payload(**changes):
     payload = {
         "name": "Audi",
         "model": "A5",
+        "brand": "Audi",
         "type": "combustion",
         "year": 2020,
         "range_km": 600,

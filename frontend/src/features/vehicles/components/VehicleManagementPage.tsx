@@ -170,7 +170,7 @@ export function VehicleManagementPage() {
                     <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
                       <Box sx={{ minWidth: 0 }}>
                         <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
-                          <VehicleBrandLogo brand={vehicle.name} />
+                          <VehicleBrandLogo brand={vehicle.brand ?? vehicle.name} />
                           <Box sx={{ minWidth: 0 }}>
                             <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
                             <Typography color="text.secondary">{vehicle.model}</Typography>

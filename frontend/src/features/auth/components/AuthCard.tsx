@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Box, Paper, Stack, Typography } from "@mui/material";
 import { ThemeModeToggle } from "@/components/ThemeModeToggle";
 

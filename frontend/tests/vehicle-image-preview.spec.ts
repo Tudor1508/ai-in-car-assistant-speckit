@@ -98,6 +98,7 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await page.keyboard.press("Tab");
   await expect(dialog.getByLabel("Model")).toBeFocused();
   await dialog.getByLabel("Vehicle name").fill("Audi");
+  await dialog.getByLabel("Brand").fill("Audi");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Model").fill("Obsolete Model");
   await expect.poll(() => requestedModels.includes("Obsolete Model")).toBeTruthy();
@@ -199,6 +200,7 @@ test("a same-model image without confirmed year is labeled similar in preview an
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("Tesla");
+  await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
   await expect(dialog.getByText("Similar vehicle image; the exact model or year is not confirmed.")).toBeVisible();
@@ -267,6 +269,7 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Vehicle name").fill("Tesla");
+  await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Range (km)").fill("400");
