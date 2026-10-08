@@ -17,6 +17,7 @@ import { authCleared } from "@/features/auth/authSlice";
 import { ApiClientError, setCsrfToken } from "@/lib/api/client";
 import { VehicleForm } from "./VehicleForm";
 import { VehicleImageDisplay } from "./VehicleImageDisplay";
+import { VehicleBrandLogo } from "./VehicleBrandLogo";
 import { VehicleDeleteDialog } from "./VehicleDeleteDialog";
 import {
   createVehicle,
@@ -168,8 +169,13 @@ export function VehicleManagementPage() {
                   <CardContent>
                     <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
-                        <Typography color="text.secondary">{vehicle.model}</Typography>
+                        <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
+                          <VehicleBrandLogo brand={vehicle.name} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
+                            <Typography color="text.secondary">{vehicle.model}</Typography>
+                          </Box>
+                        </Stack>
                       </Box>
                       <Stack direction="row" sx={{ gap: 0.5 }}>
                         <Button size="small" onClick={() => openEdit(vehicle)} aria-label={`Edit ${vehicle.name}`}>Edit</Button>

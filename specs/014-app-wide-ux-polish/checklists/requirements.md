@@ -8,20 +8,20 @@
 
 - [x] OQ-1 resolved: deleting a visible favorite fills its slot from the next saved route when one exists; the collapsed list shows at most two and “Show more” reveals the rest.
 - [x] OQ-2 resolved: the project owner supplies Contact and Privacy content; no text or details may be invented.
-- [x] The specification defines the interim state while owner text is unavailable: Contact and Privacy content is blocked and the page communicates that status.
+- [x] The approved demo state is explicit: Contact says there is no active support channel; Privacy is general information for this demo, not a legal policy for a public service.
 
 ## Requirement Quality
 
 - [x] No unresolved open questions or `[NEEDS CLARIFICATION]` markers remain.
 - [x] The two previously open decisions are reflected in user scenarios, functional requirements, traceability, assumptions, and success criteria where relevant.
 - [x] Favorite removal behavior is observable for both successful removal and failed removal.
-- [x] Contact/Privacy content ownership and the blocked-until-supplied state are explicit and testable.
+- [x] Contact's no-channel state and Privacy's limited demo scope are explicit and testable.
 - [x] The specification continues to prohibit fabricated contact details and legal/privacy claims.
 - [x] Existing authentication, authorization, route, vehicle-range, and AI behavior boundaries remain explicit.
 
 ## Owner Content Gate
 
-- [ ] Project owner supplies approved Contact page details/text.
-- [ ] Project owner supplies approved Privacy page text.
+- [x] Project owner approves the Contact statement that this demo has no active support channel.
+- [x] Project owner approves general Privacy information for this demo, not a legal policy for a public service.
 
-Until both items above are supplied and approved, the pages may expose their routes and footer links but MUST keep their content blocked with a clear pending-owner-content message. This gate does not permit placeholder legal claims or invented contact information.
+The project owner approved the statement that this demo has no active support channel and approved general Privacy information for the demo. Contact MUST display the approved no-channel statement and no placeholder. Privacy MUST be clearly described as general demo information rather than a legal policy for a public service. Do not add unconfirmed data or retention claims.

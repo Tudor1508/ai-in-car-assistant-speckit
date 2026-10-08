@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("landing actions, blocked public pages, and shared theme work across route groups", async ({ page }) => {
+test("landing actions, demo contact and privacy information, and shared theme work across route groups", async ({ page }) => {
   let role: "user" | "admin" = "user";
   const apiPort = new URL(process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000").port;
   await page.route("**/auth/me", (route) => route.fulfill({ json: { data: { id: "theme-test", name: "Theme Test", email: "theme@example.test", email_verified: false, role } } }));
@@ -30,12 +30,17 @@ test("landing actions, blocked public pages, and shared theme work across route 
   await expect(footerNavigation.getByRole("link", { name: "Contact" })).toHaveAttribute("href", "/contact");
   await expect(footerNavigation.getByRole("link", { name: "Privacy" })).toHaveAttribute("href", "/privacy");
   await page.goto("/contact");
-  await expect(page.getByRole("heading", { name: "Contact" })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("blocked until the project owner provides and approves it");
-  await expect(page.getByText(/@|privacy policy|we collect/i)).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Contact Drivewise" })).toBeVisible();
+  await expect(page.getByRole("status")).toHaveText("This demo does not have an active support channel.");
+  await expect(page.getByText("[Add the approved support email address or contact link]", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("The Contact page is unavailable until the project owner provides the official support channel.")).toHaveCount(0);
+  await expect(page.getByText(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)).toHaveCount(0);
   await page.goto("/privacy");
-  await expect(page.getByRole("heading", { name: "Privacy" })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("blocked until the project owner provides and approves it");
+  await expect(page.getByRole("heading", { name: "Privacy at Drivewise" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("general information about the demo, not a legal privacy policy for a public service");
+  await expect(page.getByText(/information that may be involved when you use those features/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Maps and external services" })).toBeVisible();
+  await expect(page.getByText(/draft for review|retention|stored for as long/i)).toHaveCount(0);
 
   await page.goto("/login");
   const lightModeToggle = page.getByRole("button", { name: "Switch to light mode" });

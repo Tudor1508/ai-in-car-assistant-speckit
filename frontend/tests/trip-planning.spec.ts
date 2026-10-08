@@ -214,8 +214,8 @@ test("current location action uses configured browser coordinates after permissi
 test("range-feasible live route shows map, metrics, and visible attribution", async ({ page }) => {
   await registerAndLogin(page, "range-feasible");
   await previewConfiguredRoute(page, { origin: originQuery, destination: destinationQuery, range: rangeKm, percent: currentPercent, vehicleSuffix: "range" });
-  await expect(page.getByText("Distanță", { exact: true })).toBeVisible({ timeout: 90000 });
-  await expect(page.getByText("Timp la volan", { exact: true })).toBeVisible();
+  await expect(page.getByText("Distance", { exact: true })).toBeVisible({ timeout: 90000 });
+  await expect(page.getByText("Driving time", { exact: true })).toBeVisible();
   await expect(page.getByLabel("Hartă cu traseul planificat")).toBeVisible();
   await expect(page.locator(".leaflet-control-attribution")).toBeVisible();
 });

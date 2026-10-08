@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, CardContent, CircularProgress, IconButton, Stack, SvgIcon, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/lib/store";
 import { authCleared } from "@/features/auth/authSlice";
@@ -32,6 +32,10 @@ const RouteMap = dynamic(() => import("./RouteMap"), {
   ssr: false,
   loading: () => <Box sx={{ height: 320, display: "grid", placeItems: "center" }}><CircularProgress /></Box>,
 });
+const RouteMapEmptyState = dynamic(() => import("./RouteMapEmptyState"), {
+  ssr: false,
+  loading: () => <Box sx={{ height: { xs: 320, md: 460 }, display: "grid", placeItems: "center" }}><CircularProgress /></Box>,
+});
 
 export function TripPlanningDashboard() {
   const dispatch = useDispatch<AppDispatch>();
@@ -41,10 +45,13 @@ export function TripPlanningDashboard() {
   const [vehicleLoadMessage, setVehicleLoadMessage] = useState("");
   const [checkingAccess, setCheckingAccess] = useState(true);
   const [selectedPreference, setSelectedPreference] = useState<TripRouteChoice["preference"]>("fastest");
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [fullscreenError, setFullscreenError] = useState("");
   const [originText, setOriginText] = useState("");
   const [destinationText, setDestinationText] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
   const previewRequestId = useRef(0);
+  const mapFrameRef = useRef<HTMLDivElement | null>(null);
   const selectedVehicle = useMemo(() => vehicles.items.find((item) => item.id === trip.vehicleId), [vehicles.items, trip.vehicleId]);
   const selectedChoice = trip.preview?.route_choices?.find((choice) => choice.preference === selectedPreference && choice.status === "available");
   const selectedOption = trip.preview?.route_options?.find((option) => option.id === (selectedChoice?.route_option_id ?? trip.selectedRouteOptionId));
@@ -92,6 +99,14 @@ export function TripPlanningDashboard() {
 
   useEffect(() => { void loadVehicles(); }, [loadVehicles]);
 
+  useEffect(() => {
+    function syncFullscreenState() {
+      setMapFullscreen(document.fullscreenElement === mapFrameRef.current);
+    }
+    document.addEventListener("fullscreenchange", syncFullscreenState);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreenState);
+  }, []);
+
   async function preview() {
     if (!trip.origin || !trip.destination || !trip.vehicleId || trip.currentLevelPercent === null) return;
     const requestId = ++previewRequestId.current;
@@ -125,6 +140,26 @@ export function TripPlanningDashboard() {
   function cancelPreview() {
     previewRequestId.current += 1;
     dispatch(tripPreviewCanceled());
+  }
+  async function toggleMapFullscreen() {
+    setFullscreenError("");
+    try {
+      if (document.fullscreenElement === mapFrameRef.current) {
+        await document.exitFullscreen();
+      } else if (mapFrameRef.current?.requestFullscreen) {
+        await mapFrameRef.current.requestFullscreen();
+      } else {
+        setFullscreenError("Fullscreen mode is not available in this browser.");
+      }
+    } catch {
+      setFullscreenError("Fullscreen mode could not be opened.");
+    }
+  }
+  function selectFullscreenRoute(preference: TripRouteChoice["preference"]) {
+    const choice = trip.preview?.route_choices?.find((item) => item.preference === preference);
+    if (choice?.status !== "available" || !choice.route_option_id) return;
+    setSelectedPreference(preference);
+    dispatch(routeOptionSelected(choice.route_option_id));
   }
   async function saveSelectedTrip() {
     if (!displayedPreview || !trip.origin || !trip.destination || !trip.vehicleId || trip.currentLevelPercent === null) return;
@@ -175,10 +210,10 @@ export function TripPlanningDashboard() {
                   <Box sx={{ mt: 3, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr auto" }, gap: 2, alignItems: "end" }}>
                     <VehicleRangeControl disabled={trip.status === "loading"} />
                     {trip.status === "loading" ? (
-                      <Button variant="outlined" color="warning" size="large" onClick={cancelPreview} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>Stop</Button>
+                      <Button variant="outlined" color="warning" size="large" onClick={cancelPreview} startIcon={<CircularProgress size={18} color="inherit" aria-label="Route generation in progress" />} aria-busy="true" sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>Stop</Button>
                     ) : (
                       <Button variant="contained" size="large" onClick={() => void preview()} disabled={!trip.origin || !trip.destination || !selectedVehicle || selectedVehicle.range_km <= 0 || trip.currentLevelPercent === null} sx={{ minHeight: 56, px: 4, fontWeight: 800 }}>
-                        Generează rutele
+                        Generate routes
                       </Button>
                     )}
                   </Box>
@@ -189,7 +224,7 @@ export function TripPlanningDashboard() {
             {trip.preview?.route_choices && (
               <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4, mb: 2.5 }}>
                 <CardContent>
-                  <Typography id="generated-routes-label" variant="h5" sx={{ fontWeight: 800, mb: 1.5 }}>Rutele generate</Typography>
+                  <Typography id="generated-routes-label" variant="h5" sx={{ fontWeight: 800, mb: 1.5 }}>Generated routes</Typography>
                   <Box role="group" aria-labelledby="generated-routes-label" sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" }, gap: 1.5 }}>
                     {routeGroups.map(({ option, choices }) => (
                       (() => {
@@ -204,10 +239,10 @@ export function TripPlanningDashboard() {
                           <>
                             {scenicChoice.reason && scenicChoice.reason !== "no_attractions_found"
                               ? <Typography component="span" variant="caption" color="warning.light">{scenicCoverageMessage(scenicChoice.reason)}</Typography>
-                              : <Typography component="span" variant="caption">{option.attraction_count} atracții găsite</Typography>}
+                              : <Typography component="span" variant="caption">{option.attraction_count} attractions found</Typography>}
                           </>
                         )}
-                        <Typography component="span" variant="caption" sx={routeIncomplete ? { fontWeight: 800 } : undefined}>{routeIncomplete ? `Ruta indisponibilă cu autonomia actuală${option.feasibility.additional_range_km != null ? ` · mai ai nevoie de ${option.feasibility.additional_range_km.toLocaleString("ro-RO", { maximumFractionDigits: 1 })} km` : ""}` : "Autonomie suficientă"}</Typography>
+                        <Typography component="span" variant="caption" sx={routeIncomplete ? { fontWeight: 800 } : undefined}>{routeIncomplete ? `Route exceeds current range${option.feasibility.additional_range_km != null ? ` · ${option.feasibility.additional_range_km.toLocaleString("en-US", { maximumFractionDigits: 1 })} km more needed` : ""}` : "Range is sufficient"}</Typography>
                       </Button>;
                       })()
                     ))}
@@ -215,8 +250,8 @@ export function TripPlanningDashboard() {
                       <Alert key={choice.preference} severity="info" role="status" sx={{ bgcolor: "background.default", color: "text.primary", alignItems: "center" }}>
                         <Typography sx={{ fontWeight: 800 }}>{routeName(choice.preference)}</Typography>
                         {choice.reason === "no_attractions_found"
-                          ? "Nu au fost găsite atracții pe rutele disponibile."
-                          : "Nu s-a putut calcula o variantă Scenic pentru această călătorie."}
+                          ? "No attractions were found along the available routes."
+                          : "A Scenic route could not be calculated for this trip."}
                       </Alert>
                     ))}
                   </Box>
@@ -224,10 +259,62 @@ export function TripPlanningDashboard() {
               </Card>
             )}
             {displayedPreview && trip.origin && trip.destination && (
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.3fr) minmax(320px, .7fr)" }, gap: 2 }}>
-                <RouteMap preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
+              <Box sx={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: 2 }}>
+                <Box
+                  ref={mapFrameRef}
+                  sx={{
+                    position: "relative",
+                    height: mapFullscreen ? "100vh" : undefined,
+                    "&:fullscreen": { width: "100vw", height: "100vh", maxWidth: "none", borderRadius: 0, overflow: "hidden", bgcolor: "background.default" },
+                  }}
+                >
+                  <RouteMap preview={displayedPreview} origin={trip.origin} destination={trip.destination} height={mapFullscreen ? "100%" : undefined} fullscreen={mapFullscreen} />
+                  <IconButton
+                    aria-label={mapFullscreen ? "Exit fullscreen map" : "Enter fullscreen map"}
+                    title={mapFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                    onClick={() => void toggleMapFullscreen()}
+                    sx={{ position: "absolute", zIndex: 1300, top: 16, right: 16, width: 44, height: 44, bgcolor: "rgba(7,19,31,.84)", color: "white", border: "1px solid rgba(255,255,255,.24)", backdropFilter: "blur(10px)", "&:hover": { bgcolor: "rgba(7,19,31,.96)" } }}
+                  >
+                    <SvgIcon viewBox="0 0 24 24" fontSize="small">
+                      {mapFullscreen
+                        ? <path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+                        : <path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />}
+                    </SvgIcon>
+                  </IconButton>
+                  {mapFullscreen ? (
+                    <Stack
+                      component="header"
+                      role="toolbar"
+                      aria-label="Fullscreen map controls"
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      sx={{ alignItems: "center", position: "absolute", zIndex: 1200, top: 16, left: "50%", transform: "translateX(-50%)", maxWidth: "calc(100% - 24px)", px: 1.25, py: 1, border: "1px solid rgba(255,255,255,.2)", borderRadius: 3, bgcolor: "rgba(7,19,31,.82)", color: "white", backdropFilter: "blur(14px)", boxShadow: "0 8px 28px rgba(0,0,0,.3)" }}
+                    >
+                      <Stack direction="row" role="group" aria-label="Select route type" spacing={0.5}>
+                        {(["fastest", "shortest", "scenic"] as const).map((preference) => {
+                          const choice = trip.preview?.route_choices?.find((item) => item.preference === preference);
+                          const available = choice?.status === "available" && Boolean(choice.route_option_id);
+                          return (
+                            <Button
+                              key={preference}
+                              size="small"
+                              variant={selectedPreference === preference ? "contained" : "outlined"}
+                              aria-pressed={selectedPreference === preference}
+                              disabled={!available}
+                              onClick={() => selectFullscreenRoute(preference)}
+                              sx={{ minWidth: { xs: 78, sm: 92 }, color: selectedPreference === preference ? "#071522" : "white", borderColor: "rgba(255,255,255,.4)", bgcolor: selectedPreference === preference ? "#58dced" : "transparent", "&:hover": { bgcolor: selectedPreference === preference ? "#8cecf6" : "rgba(255,255,255,.12)", borderColor: "white" } }}
+                            >
+                              {routeName(preference)}
+                            </Button>
+                          );
+                        })}
+                      </Stack>
+                    </Stack>
+                  ) : null}
+                </Box>
+                {fullscreenError && <Alert severity="warning" role="status">{fullscreenError}</Alert>}
                 <Card sx={{ bgcolor: "background.paper", color: "text.primary", border: "1px solid", borderColor: "divider", borderRadius: 4 }}>
-                  <CardContent><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Detalii traseu</Typography><RouteSummary preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
+                  <CardContent sx={{ p: { xs: 2, sm: 3 } }}><Stack spacing={2}><Typography variant="h5" sx={{ fontWeight: 800 }}>Route details</Typography><RouteSummary preview={displayedPreview} origin={trip.origin} destination={trip.destination} />
                     <Button variant="contained" onClick={() => void saveSelectedTrip()} disabled={trip.historySaveStatus === "loading"}>
                       {trip.historySaveStatus === "loading" ? <CircularProgress size={18} sx={{ mr: 1 }} /> : null}Save trip
                     </Button>
@@ -236,11 +323,7 @@ export function TripPlanningDashboard() {
                 </Card>
               </Box>
             )}
-            {!displayedPreview && (
-              <Box role="region" aria-label="Trip map" sx={{ minHeight: { xs: 320, md: 460 }, borderRadius: 3, border: "1px solid", borderColor: "divider", bgcolor: "background.paper", display: "grid", placeItems: "center", p: 2 }}>
-                <Alert severity="info" role="status">The map preview will appear here after a route is generated. Enter a starting point and destination to begin.</Alert>
-              </Box>
-            )}
+            {!displayedPreview && <RouteMapEmptyState />}
           </>
         )}
       </Box>
@@ -253,8 +336,8 @@ function routeName(preference: TripRouteChoice["preference"]) {
 }
 
 function scenicCoverageMessage(reason: NonNullable<TripRouteChoice["reason"]>) {
-  if (reason === "no_distinct_candidates") return "ORS nu a furnizat o rută alternativă distinctă; Scenic folosește ruta disponibilă.";
-  if (reason === "poi_geometry_limit") return "Limita serviciului a împiedicat verificarea atracțiilor.";
-  if (reason === "poi_results_incomplete") return "Lista atracțiilor poate fi incompletă.";
-  return "Serviciul de atracții nu a răspuns; ruta Scenic este disponibilă fără această verificare.";
+  if (reason === "no_distinct_candidates") return "ORS did not provide a distinct alternative route, so Scenic uses the available route.";
+  if (reason === "poi_geometry_limit") return "A service limit prevented attraction checks.";
+  if (reason === "poi_results_incomplete") return "The attraction list may be incomplete.";
+  return "The attraction service did not respond; the Scenic route is available without this check.";
 }
