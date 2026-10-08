@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { AppBar, Box, Button, Stack, Toolbar, Typography } from "@mui/material";
+import { AppBar, Box, Button, IconButton, Menu, MenuItem, Stack, Toolbar, Typography } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/lib/store";
 import { accountLoaded } from "@/features/auth/authSlice";
@@ -29,6 +29,7 @@ export function AppNavigation() {
   const dispatch = useDispatch<AppDispatch>();
   const account = useSelector((state: RootState) => state.auth.account);
   const [error, setError] = useState("");
+  const [mobileMenuAnchor, setMobileMenuAnchor] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -53,14 +54,55 @@ export function AppNavigation() {
   }, [account, dispatch, pathname, router]);
 
   const visibleLinks = account?.role === "producer" ? producerLinks : links;
+  const mobileMenuOpen = Boolean(mobileMenuAnchor);
 
   return (
     <AppBar position="sticky" elevation={0} sx={{ bgcolor: "background.paper", color: "text.primary", borderBottom: 1, borderColor: "divider" }}>
-      <Toolbar sx={{ minHeight: 64, display: "flex", flexWrap: "wrap", gap: 1.5 }}>
-        <Typography component={Link} href="/trip" sx={{ color: "inherit", textDecoration: "none", fontWeight: 800, mr: { xs: "auto", md: 3 } }}>
+      <Toolbar sx={{ minHeight: 64, display: "flex", flexWrap: "nowrap", gap: { xs: 1, md: 1.5 } }}>
+        <IconButton
+          aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileMenuOpen}
+          aria-haspopup="menu"
+          onClick={(event) => {
+            const anchor = event.currentTarget;
+            setMobileMenuAnchor((current) => current ? null : anchor);
+          }}
+          aria-controls={mobileMenuOpen ? "mobile-main-navigation" : undefined}
+          sx={{ display: { xs: "inline-flex", md: "none" }, color: "text.primary", p: 1 }}
+        >
+          <Box aria-hidden="true" sx={{ width: 22, height: 18, display: "flex", flexDirection: "column", justifyContent: "space-between", py: "2px" }}>
+            {[0, 1, 2].map((line) => <Box key={line} sx={{ height: 2, width: "100%", borderRadius: 2, bgcolor: "currentColor" }} />)}
+          </Box>
+        </IconButton>
+        <Menu
+          anchorEl={mobileMenuAnchor}
+          open={mobileMenuOpen}
+          onClose={() => setMobileMenuAnchor(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          slotProps={{ list: { id: "mobile-main-navigation", "aria-label": "Main navigation" } }}
+          sx={{ display: { xs: "block", md: "none" } }}
+        >
+          {visibleLinks.map((link) => {
+            const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+            return (
+              <MenuItem
+                key={link.href}
+                component={Link}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                onClick={() => setMobileMenuAnchor(null)}
+                sx={{ minWidth: 200, color: active ? "primary.main" : "text.primary", fontWeight: active ? 700 : 400 }}
+              >
+                {link.label}
+              </MenuItem>
+            );
+          })}
+        </Menu>
+        <Typography component={Link} href="/trip" sx={{ display: { xs: "none", md: "block" }, color: "inherit", textDecoration: "none", fontWeight: 800, mr: 3, whiteSpace: "nowrap" }}>
           <Box component="span" aria-hidden="true" sx={{ display: "inline-block", width: 12, height: 12, border: "2px solid", borderColor: "primary.main", borderRadius: "50%", mr: 1 }} /> drivewise.
         </Typography>
-        <Stack component="nav" aria-label="Main navigation" direction="row" sx={{ order: { xs: 3, md: 2 }, gap: { xs: 0, sm: 0.5 }, flex: { xs: "1 1 100%", md: "0 1 auto" }, width: { xs: "100%", md: "auto" }, maxWidth: "100%", minWidth: 0, boxSizing: "border-box", overflowX: { xs: "auto", md: "visible" }, justifyContent: { xs: "flex-start", md: "flex-start" } }}>
+        <Stack component="nav" aria-label="Main navigation" direction="row" sx={{ display: { xs: "none", md: "flex" }, gap: 0.5, minWidth: 0 }}>
           {visibleLinks.map((link) => {
             const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
             return (
@@ -76,7 +118,7 @@ export function AppNavigation() {
             );
           })}
         </Stack>
-        <Box sx={{ ml: { md: "auto" }, order: { xs: 2, md: 3 }, display: "flex", alignItems: "center" }}>
+        <Box sx={{ ml: "auto", display: "flex", alignItems: "center", flexShrink: 0 }}>
           <ThemeModeToggle />
           <SignOutButton onError={setError} />
         </Box>

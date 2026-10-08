@@ -25,7 +25,8 @@ export function LoginForm() {
       router.replace(account.role === "admin" ? "/admin" : "/trip");
     }).catch(() => {
       // An anonymous or expired session should be able to use the sign-in form.
-    }).finally(() => { if (active) setCheckingSession(false); });
+      if (active) setCheckingSession(false);
+    });
     return () => { active = false; };
   }, [dispatch, router]);
 
@@ -42,11 +43,20 @@ export function LoginForm() {
       setError(cause instanceof Error ? cause.message : "The email or password is incorrect.");
     } finally { setBusy(false); }
   }
-  return <AuthCard title="Sign in"><Stack component="form" onSubmit={submit} spacing={2} aria-busy={busy || checkingSession}>
-    <TextField name="email" label="Email" type="email" required autoComplete="email" disabled={busy || checkingSession} />
-    <TextField name="password" label="Password" type="password" required autoComplete="current-password" disabled={busy || checkingSession} />
+  if (checkingSession) {
+    return (
+      <Stack component="main" role="status" spacing={2} sx={{ minHeight: "100vh", alignItems: "center", justifyContent: "center", bgcolor: "background.default", color: "text.secondary" }}>
+        <CircularProgress aria-label="Checking session" />
+        <Typography>Checking your session…</Typography>
+      </Stack>
+    );
+  }
+
+  return <AuthCard title="Sign in"><Stack component="form" onSubmit={submit} spacing={2} aria-busy={busy}>
+    <TextField name="email" label="Email" type="email" required autoComplete="email" disabled={busy} />
+    <TextField name="password" label="Password" type="password" required autoComplete="current-password" disabled={busy} />
     {error && <Alert severity="error" role="alert">{error}</Alert>}
-    <Button type="submit" variant="contained" disabled={busy || checkingSession}>{busy || checkingSession ? <CircularProgress size={18} aria-label={checkingSession ? "Checking session" : "Signing in"} sx={{ mr: 1 }} /> : null}{checkingSession ? "Checking session…" : busy ? "Signing in…" : "Sign in"}</Button>
+    <Button type="submit" variant="contained" disabled={busy}>{busy ? <CircularProgress size={18} aria-label="Signing in" sx={{ mr: 1 }} /> : null}{busy ? "Signing in…" : "Sign in"}</Button>
     <Typography sx={{ textAlign: "center" }}>New here? <Link href="/register">Create an account</Link></Typography>
   </Stack></AuthCard>;
 }

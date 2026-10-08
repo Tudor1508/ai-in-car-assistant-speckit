@@ -69,7 +69,18 @@ class VehicleFields(BaseModel):
 
 
 class VehicleCreate(VehicleFields):
-    pass
+    name: str = Field(default="", min_length=1, max_length=80)
+
+    @model_validator(mode="before")
+    @classmethod
+    def generate_name_from_brand_and_model(cls, values):
+        if not isinstance(values, dict) or str(values.get("name") or "").strip():
+            return values
+        brand = values.get("brand")
+        model = values.get("model")
+        if isinstance(brand, str) and isinstance(model, str):
+            return {**values, "name": f"{brand.strip()} {model.strip()}".strip()}
+        return values
 
 
 class VehiclePatch(BaseModel):

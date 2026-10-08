@@ -19,28 +19,26 @@ async function addCombustionVehicle(page: Page) {
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill("Daily driver");
   await dialog.getByLabel("Brand").fill("Audi");
-  await dialog.getByLabel("Model").fill("Audi A5");
+  await dialog.getByLabel("Model").fill("A5");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Range (km)").fill("600");
   await dialog.getByLabel("Mileage (km)").fill("320000");
   await dialog.getByLabel("Fuel type").click();
   await page.getByRole("option", { name: "Diesel" }).click();
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Daily driver")).toBeVisible();
+  await expect(page.getByText("Audi A5")).toBeVisible();
 }
 
 test("user can add, edit, reload, and view an electric car", async ({ page }) => {
   await registerAndLogin(page, `create-edit${Date.now()}@example.com`);
   await addCombustionVehicle(page);
-  await page.getByRole("button", { name: "Edit Daily driver" }).click();
+  await page.getByRole("button", { name: "Edit Audi A5" }).click();
   await page.getByLabel("Mileage (km)").fill("325000");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText(/325[,.\u00a0]000 km/)).toBeVisible();
   await page.getByRole("button", { name: /add vehicle/i }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill("City car");
   await dialog.getByLabel("Brand").fill("Drivewise");
   await dialog.getByLabel("Model").fill("EV One");
   await dialog.getByRole("combobox", { name: "Type", exact: true }).click();
@@ -52,8 +50,8 @@ test("user can add, edit, reload, and view an electric car", async ({ page }) =>
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Not applicable")).toBeVisible();
   await page.reload();
-  await expect(page.getByText("City car")).toBeVisible();
-  await expect(page.getByText("Daily driver")).toBeVisible();
+  await expect(page.getByText("Drivewise EV One")).toBeVisible();
+  await expect(page.getByText("Audi A5")).toBeVisible();
 });
 
 test("vehicle form identifies invalid fields and does not save them", async ({ page }) => {
@@ -61,16 +59,15 @@ test("vehicle form identifies invalid fields and does not save them", async ({ p
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill(" ");
   await dialog.getByLabel("Model").fill("Model");
-  await dialog.getByLabel("Brand").fill("Tesla");
+  await dialog.getByLabel("Brand").fill(" ");
   await dialog.getByLabel("Year").fill("2100");
   await dialog.getByLabel("Range (km)").fill("-2");
   await dialog.getByLabel("Mileage (km)").fill("1.5");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText(/name between 1 and 80 characters/i)).toBeVisible();
+  await expect(dialog.getByText(/brand between 1 and 120 characters/i)).toBeVisible();
   await expect(dialog.getByText(/year between 1886 and/i)).toBeVisible();
-  await expect(page.getByText("Daily driver")).toHaveCount(0);
+  await expect(page.getByText("Audi A5")).toHaveCount(0);
 });
 
 test("failed create and edit preserve form input and vehicle state for retry", async ({ page }) => {
@@ -79,9 +76,8 @@ test("failed create and edit preserve form input and vehicle state for retry", a
 
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const createDialog = page.getByRole("dialog");
-  await createDialog.getByLabel("Vehicle name").fill("Daily driver");
   await createDialog.getByLabel("Brand").fill("Audi");
-  await createDialog.getByLabel("Model").fill("Audi A5");
+  await createDialog.getByLabel("Model").fill("A5");
   await createDialog.getByLabel("Year").fill("2020");
   await createDialog.getByLabel("Range (km)").fill("600");
   await createDialog.getByLabel("Mileage (km)").fill("320000");
@@ -107,22 +103,21 @@ test("failed create and edit preserve form input and vehicle state for retry", a
 
   await createDialog.getByRole("button", { name: "Save" }).click();
   await expect(createDialog.getByRole("alert").filter({ hasText: /The request could not be processed/ })).toBeVisible();
-  await expect(createDialog.getByLabel("Vehicle name")).toHaveValue("Daily driver");
-  await expect(createDialog.getByLabel("Model")).toHaveValue("Audi A5");
-  await expect(page.getByText("Daily driver")).toHaveCount(0);
+  await expect(createDialog.getByLabel("Model")).toHaveValue("A5");
+  await expect(page.getByText("Audi A5")).toHaveCount(0);
 
   await createDialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.locator('button[aria-label*="Daily driver"]')).toHaveCount(2);
+  await expect(page.locator('button[aria-label*="Audi A5"]')).toHaveCount(2);
   failNextPatch = true;
-  await page.getByRole("button", { name: /Daily driver/ }).filter({ hasText: /Edit/ }).click();
+  await page.getByRole("button", { name: /Audi A5/ }).filter({ hasText: /Edit/ }).click();
   const editDialog = page.getByRole("dialog");
-  await editDialog.getByLabel("Vehicle name").fill("Updated driver");
+  await editDialog.getByLabel("Mileage (km)").fill("325000");
   await editDialog.getByRole("button", { name: "Save" }).click();
   await expect(editDialog.getByRole("alert").filter({ hasText: /The request could not be processed/ })).toBeVisible();
-  await expect(editDialog.getByLabel("Vehicle name")).toHaveValue("Updated driver");
-  await expect(page.locator('button[aria-label*="Daily driver"]')).toHaveCount(2);
+  await expect(editDialog.getByLabel("Mileage (km)")).toHaveValue("325000");
+  await expect(page.locator('button[aria-label*="Audi A5"]')).toHaveCount(2);
 
   await editDialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("button", { name: /Updated driver/ }).filter({ hasText: /Edit/ })).toBeVisible();
-  await expect(page.getByRole("button", { name: /Daily driver/ }).filter({ hasText: /Edit/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Audi A5/ }).filter({ hasText: /Edit/ })).toHaveCount(2);
+  await expect(page.getByText(/325[,\u00a0]000 km/)).toBeVisible();
 });

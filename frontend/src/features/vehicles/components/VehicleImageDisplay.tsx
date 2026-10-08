@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Box, Link, Stack, Typography } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import type { VehicleImage } from "../vehiclesSlice";
 import { getVehicleImage } from "../vehiclesApi";
 
 const FALLBACK_SRC = "/images/generic-vehicle.svg";
-const GENERIC_ALT = "Generic vehicle illustration; exact model image unavailable.";
+const GENERIC_ALT = "Placeholder image shown when no vehicle photo is available.";
 
 type Props = {
   image: VehicleImage | null;
@@ -17,6 +18,7 @@ type Props = {
 };
 
 export function VehicleImageDisplay({ image, vehicleLabel, vehicleId, previewFile }: Props) {
+  const theme = useTheme();
   const [broken, setBroken] = useState(false);
   const [uploadedSrc, setUploadedSrc] = useState<string | null>(null);
 
@@ -53,12 +55,13 @@ export function VehicleImageDisplay({ image, vehicleLabel, vehicleId, previewFil
       ? uploadedSrc
       : image?.image_url ?? null;
   const showFallback = broken || (image === null && !previewFile) || !imageSource;
+  const fallbackSource = theme.palette.mode === "light" ? "/images/generic-vehicle-light.svg" : FALLBACK_SRC;
 
   return (
     <Stack spacing={0.75}>
-      <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", borderRadius: 2, bgcolor: "#14283a" }}>
+      <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 9", overflow: "hidden", borderRadius: 2, bgcolor: "background.paper" }}>
         <Image
-          src={showFallback ? FALLBACK_SRC : imageSource!}
+          src={showFallback ? fallbackSource : imageSource!}
           alt={showFallback ? GENERIC_ALT : `Representative image for ${vehicleLabel}`}
           fill
           sizes="(max-width: 900px) 100vw, 50vw"
@@ -68,7 +71,7 @@ export function VehicleImageDisplay({ image, vehicleLabel, vehicleId, previewFil
         />
       </Box>
       {showFallback ? (
-        <Typography variant="caption" color="text.secondary">Generic illustration; it does not represent the exact vehicle model.</Typography>
+        <Typography variant="caption" color="text.secondary">No photo available yet. Upload a photo to show your vehicle here.</Typography>
       ) : previewFile || image?.provider === "user_upload" ? (
         <Typography variant="caption" color="text.secondary">Your uploaded vehicle photo</Typography>
       ) : image?.provider === "wikimedia_commons" ? (

@@ -2,6 +2,7 @@
 
 import { Box, Card, CardContent, Chip, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
 import type { RouteStat, VehicleTopRouteStat } from "../producerTypes";
+import { formatVehicleLabel } from "@/features/vehicles/vehicleLabel";
 
 const numberFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 });
 
@@ -30,7 +31,7 @@ export function RoutesSection({ routes, vehicleTopRoutes, companyName }: { route
                     <Typography sx={{ fontWeight: 700 }}>{route.origin} → {route.destination}</Typography>
                     {route.vehicles.slice(0, 2).map((vehicle) => (
                       <Typography key={`${vehicle.name}-${vehicle.model}`} variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                        {vehicle.name} {vehicle.model} used this route most: {vehicle.tripsCount} trips · {numberFormat.format(vehicle.totalDistanceKm)} km
+                        {formatVehicleLabel(vehicle.name, vehicle.model)} used this route most: {vehicle.tripsCount} trips · {numberFormat.format(vehicle.totalDistanceKm)} km
                       </Typography>
                     ))}
                   </TableCell>

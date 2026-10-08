@@ -45,6 +45,26 @@ def test_create_and_patch_trim_fields_and_persist_values(auth_client):
     assert auth_client.get(f"/vehicles/{vehicle['id']}").json()["data"]["vehicle"]["mileage_km"] == 325000
 
 
+def test_create_generates_name_from_brand_and_model_when_omitted(auth_client):
+    csrf = signed_in(auth_client, "generated-name@example.com")
+    vehicle_payload = payload(brand="Mercedes", model="S Class")
+    vehicle_payload.pop("name")
+
+    created = auth_client.post("/vehicles", headers=headers(csrf), json=vehicle_payload)
+
+    assert created.status_code == 201
+    vehicle = created.json()["data"]["vehicle"]
+    assert vehicle["name"] == "Mercedes S Class"
+
+    updated = auth_client.patch(
+        f"/vehicles/{vehicle['id']}",
+        headers=headers(csrf),
+        json={"brand": "Mercedes", "model": "E Class"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["data"]["vehicle"]["name"] == "Mercedes E Class"
+
+
 def test_image_resolution_failure_keeps_valid_saves_and_vehicle_image_lifecycle(auth_client, monkeypatch):
     csrf = signed_in(auth_client, "image-lifecycle@example.com")
     image = CommonsVehicleImage(

@@ -9,7 +9,6 @@ const required = (name: string) => {
 const accountName = required("TRIP_TEST_ACCOUNT_NAME");
 const accountEmail = required("TRIP_TEST_ACCOUNT_EMAIL");
 const accountPassword = required("TRIP_TEST_ACCOUNT_PASSWORD");
-const vehicleName = required("TRIP_TEST_VEHICLE_NAME");
 const vehicleModel = required("TRIP_TEST_VEHICLE_MODEL");
 const vehicleYear = required("TRIP_TEST_VEHICLE_YEAR");
 const vehicleMileage = required("TRIP_TEST_VEHICLE_MILEAGE_KM");
@@ -56,9 +55,8 @@ async function addVehicle(page: Page, suffix: string, range: string, requestedTy
   await page.goto("/vehicles");
   await page.getByRole("button", { name: "Add vehicle" }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill(`${vehicleName} ${suffix}`);
   await dialog.getByLabel("Brand").fill("Trip Test Brand");
-  await dialog.getByLabel("Model").fill(vehicleModel);
+  await dialog.getByLabel("Model").fill(`${vehicleModel} ${suffix}`);
   await dialog.getByLabel("Type", { exact: true }).click();
   await page.getByRole("option", { name: requestedType === "electric" ? "Electric" : "Combustion" }).click();
   await dialog.getByLabel("Year").fill(vehicleYear);
@@ -70,7 +68,7 @@ async function addVehicle(page: Page, suffix: string, range: string, requestedTy
     await page.getByRole("option", { name: fuelLabels[fuelType] }).click();
   }
   await dialog.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByText(`${vehicleName} ${suffix}`)).toBeVisible();
+  await expect(page.getByText(`Trip Test Brand ${vehicleModel} ${suffix}`)).toBeVisible();
 }
 
 function scenicPreviewFixture(stationType: "fuel" | "charging", attractions: TripRoutePreview["attractions"]): TripRoutePreview {

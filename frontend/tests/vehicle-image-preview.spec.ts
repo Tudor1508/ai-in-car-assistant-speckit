@@ -37,6 +37,10 @@ async function fulfill(route: Route, data: unknown, status = 200) {
   await route.fulfill({ status, contentType: "application/json", body: JSON.stringify({ data }) });
 }
 
+function generatedName(payload: Record<string, unknown>) {
+  return `${String(payload.brand ?? "").trim()} ${String(payload.model ?? "").trim()}`.trim();
+}
+
 test("vehicle image preview ignores stale lookups and stays attributed in the garage after reload", async ({ page }) => {
   await registerAndLogin(page, `vehicle-image-${Date.now()}@example.com`);
 
@@ -81,6 +85,7 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
       savedVehicle = {
         id: "vehicle-image-test-id",
         ...payload,
+        name: generatedName(payload),
         image: payload.image_file_title ? image : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -94,10 +99,9 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").focus();
+  await dialog.getByLabel("Brand").focus();
   await page.keyboard.press("Tab");
   await expect(dialog.getByLabel("Model")).toBeFocused();
-  await dialog.getByLabel("Vehicle name").fill("Audi");
   await dialog.getByLabel("Brand").fill("Audi");
   await dialog.getByLabel("Year").fill("2020");
   await dialog.getByLabel("Model").fill("Obsolete Model");
@@ -120,14 +124,14 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await expect(page.getByText("Jane Driver")).toBeVisible();
   await expect(page.getByRole("link", { name: "CC BY-SA 4.0" })).toHaveAttribute("href", image.license_url);
   await page.reload();
-  await expect(page.getByText("Audi")).toBeVisible();
+  await expect(page.getByText("Audi A5")).toBeVisible();
   await expect(page.getByRole("link", { name: "Wikimedia Commons" })).toHaveAttribute("href", image.file_page_url);
   await expect(page.getByText("Jane Driver")).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   await page.setViewportSize({ width: 1280, height: 900 });
 
-  await page.getByRole("button", { name: "Edit Audi" }).click();
+  await page.getByRole("button", { name: "Edit Audi A5" }).click();
   const editDialog = page.getByRole("dialog");
   await editDialog.getByLabel("Year").fill("2021");
   await expect(editDialog.getByText("No reliable image match is available.")).toBeVisible();
@@ -135,10 +139,10 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await editDialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Generic illustration; it does not represent the exact vehicle model.").last()).toBeVisible();
   await page.reload();
-  await expect(page.getByText("Audi")).toBeVisible();
+  await expect(page.getByText("Audi A5")).toBeVisible();
   await expect(page.locator('img[alt="Generic vehicle illustration; exact model image unavailable."]').first()).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit Audi" }).click();
+  await page.getByRole("button", { name: "Edit Audi A5" }).click();
   const brokenImageDialog = page.getByRole("dialog");
   failImageLoads = true;
   await brokenImageDialog.getByLabel("Year").fill("2020");
@@ -146,14 +150,14 @@ test("vehicle image preview ignores stale lookups and stays attributed in the ga
   await brokenImageDialog.getByRole("button", { name: "Save" }).click();
   await expect(page.locator('img[alt="Generic vehicle illustration; exact model image unavailable."]').first()).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit Audi" }).click();
+  await page.getByRole("button", { name: "Edit Audi A5" }).click();
   const pendingDialog = page.getByRole("dialog");
   await pendingDialog.getByLabel("Model").fill("Pending lookup");
   await expect(pendingDialog.getByRole("button", { name: "Save" })).toBeEnabled();
   await pendingDialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Generic illustration; it does not represent the exact vehicle model.").last()).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit Audi" }).click();
+  await page.getByRole("button", { name: "Edit Audi Pending lookup" }).click();
   const unavailableDialog = page.getByRole("dialog");
   await unavailableDialog.getByLabel("Model").fill("Unavailable");
   await expect(unavailableDialog.getByText("No reliable image match is available.")).toBeVisible();
@@ -186,6 +190,7 @@ test("a same-model image without confirmed year is labeled similar in preview an
       savedVehicle = {
         id: "vehicle-similar-image-test-id",
         ...payload,
+        name: generatedName(payload),
         image: payload.image_file_title ? similarImage : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -199,7 +204,6 @@ test("a same-model image without confirmed year is labeled similar in preview an
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill("Tesla");
   await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
@@ -255,6 +259,7 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
       savedVehicle = {
         id: "vehicle-upload-test-id",
         ...payload,
+        name: generatedName(payload),
         image: payload.image_file_title || payload.discard_uploaded_image ? image : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -268,7 +273,6 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
   await page.goto("/vehicles");
   await page.getByRole("button", { name: /Add vehicle/i }).first().click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Vehicle name").fill("Tesla");
   await dialog.getByLabel("Brand").fill("Tesla");
   await dialog.getByLabel("Model").fill("Model 3");
   await dialog.getByLabel("Year").fill("2020");
@@ -288,7 +292,7 @@ test("uploaded vehicle photo overrides Commons and is explicitly discarded", asy
   await expect.poll(() => uploadCalls).toBe(1);
   await expect(page.getByText("Your uploaded vehicle photo")).toBeVisible();
 
-  await page.getByRole("button", { name: "Edit Tesla" }).click();
+  await page.getByRole("button", { name: "Edit Tesla Model 3" }).click();
   const editDialog = page.getByRole("dialog");
   await editDialog.getByLabel("Model").fill("Model 3 Long Range");
   await expect(editDialog.getByText("Your uploaded photo stays active until you discard it.")).toBeVisible();
@@ -320,6 +324,7 @@ test("Add/Edit dialogs keep photo controls responsive and keyboard accessible", 
       savedVehicle = {
         id: "vehicle-image-dialog-ux-id",
         ...payload,
+        name: generatedName(payload),
         image: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -362,25 +367,25 @@ test("Add/Edit dialogs keep photo controls responsive and keyboard accessible", 
 
     if (width === 375) {
       await addDialog.getByRole("button", { name: "Save" }).click();
-      await expect(addDialog.getByLabel("Vehicle name")).toHaveAttribute("aria-invalid", "true");
+      await expect(addDialog.getByLabel("Brand")).toHaveAttribute("aria-invalid", "true");
       await expect(addDialog.getByLabel("Model")).toHaveAttribute("aria-invalid", "true");
       await expect(addDialog.getByLabel("Year")).toHaveAttribute("aria-invalid", "true");
       await expect(addDialog.getByLabel("Range (km)")).toHaveAttribute("aria-invalid", "true");
       await expect(addDialog.getByLabel("Mileage (km)")).toHaveAttribute("aria-invalid", "true");
-      await addDialog.getByLabel("Vehicle name").fill("Audi");
+      await addDialog.getByLabel("Brand").fill("Audi");
       await addDialog.getByLabel("Model").fill("A5");
       await addDialog.getByLabel("Year").fill("2020");
       await addDialog.getByLabel("Range (km)").fill("600");
       await addDialog.getByLabel("Mileage (km)").fill("12000");
       await addDialog.getByRole("button", { name: "Save" }).click();
-      await expect(page.getByRole("button", { name: "Edit Audi" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Edit Audi A5" })).toBeVisible();
       await expect(addButton).toBeFocused();
     } else {
       await addDialog.getByRole("button", { name: "Cancel" }).click();
       await expect(addButton).toBeFocused();
     }
 
-    const editButton = page.getByRole("button", { name: "Edit Audi" });
+    const editButton = page.getByRole("button", { name: "Edit Audi A5" });
     await editButton.click();
     const editDialog = page.getByRole("dialog", { name: "Edit vehicle" });
     await expect(editDialog).toBeVisible();

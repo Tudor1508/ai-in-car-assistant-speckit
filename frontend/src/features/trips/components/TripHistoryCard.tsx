@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { Alert, Box, Card, CardContent, IconButton, SvgIcon, Typography } from "@mui/material";
 import type { TripHistoryItem, TripRoutePreview } from "../tripsSlice";
+import { formatVehicleLabel } from "@/features/vehicles/vehicleLabel";
 
 const RouteMap = dynamic(() => import("./RouteMap"), {
   ssr: false,
@@ -49,7 +50,7 @@ export function TripHistoryCard({ trip, index }: { trip: TripHistoryItem; index:
   const preview: TripRoutePreview = { route: trip.route, feasibility: trip.feasibility, vehicle: trip.vehicle, legs: trip.legs, stops: trip.stops, attractions: trip.attractions, restaurants: trip.restaurants, route_preference: trip.route_preference, route_labels: [trip.route_preference] };
   const label = `Route map from ${trip.origin.label} to ${trip.destination.label}`;
   const date = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(trip.created_at));
-  const vehicle = `${trip.vehicle.name} ${trip.vehicle.model}`.trim();
+  const vehicle = formatVehicleLabel(trip.vehicle.name, trip.vehicle.model);
 
   async function toggleMapFullscreen() {
     setFullscreenError("");

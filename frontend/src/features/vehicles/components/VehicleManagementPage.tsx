@@ -8,6 +8,7 @@ import {
   Button,
   Card,
   CardContent,
+  Pagination,
   Stack,
   Typography,
 } from "@mui/material";
@@ -18,6 +19,7 @@ import { ApiClientError, setCsrfToken } from "@/lib/api/client";
 import { VehicleForm } from "./VehicleForm";
 import { VehicleImageDisplay } from "./VehicleImageDisplay";
 import { VehicleBrandLogo } from "./VehicleBrandLogo";
+import { formatVehicleLabel } from "../vehicleLabel";
 import { VehicleDeleteDialog } from "./VehicleDeleteDialog";
 import {
   createVehicle,
@@ -45,6 +47,8 @@ const fuelNames: Record<string, string> = {
   other: "Other",
 };
 
+const vehiclesPerPage = 6;
+
 export function VehicleManagementPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -52,9 +56,16 @@ export function VehicleManagementPage() {
   const [editing, setEditing] = useState<Vehicle | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Vehicle | null>(null);
+  const [vehiclePage, setVehiclePage] = useState(1);
   const garageHeadingRef = useRef<HTMLHeadingElement>(null);
   const focusGarageAfterDelete = useRef(false);
   const createdPendingUpload = useRef<Vehicle | null>(null);
+  const pageCount = Math.max(1, Math.ceil(items.length / vehiclesPerPage));
+  const visibleVehicles = items.slice((vehiclePage - 1) * vehiclesPerPage, vehiclePage * vehiclesPerPage);
+
+  useEffect(() => {
+    setVehiclePage((currentPage) => Math.min(currentPage, pageCount));
+  }, [pageCount]);
 
   useEffect(() => {
     if (deleting === null && focusGarageAfterDelete.current) {
@@ -92,6 +103,7 @@ export function VehicleManagementPage() {
         : editing
           ? (await updateVehicle(editing.id, payload)).vehicle
           : (await createVehicle(payload)).vehicle;
+      if (!editing) setVehiclePage(1);
       if (!editing && !retryingCreated && photo) {
         createdPendingUpload.current = savedVehicle;
       }
@@ -164,16 +176,15 @@ export function VehicleManagementPage() {
               </Box>
             )}
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" }, gap: 2 }}>
-              {items.map((vehicle) => (
-                <Card key={vehicle.id} variant="outlined" sx={{ color: "text.primary", bgcolor: "background.default", borderColor: "divider", borderRadius: 4, borderLeft: `3px solid ${vehicle.type === "electric" ? "#58deeb" : "#f3cf4b"}` }}>
+              {visibleVehicles.map((vehicle) => (
+                <Card key={vehicle.id} variant="outlined" sx={{ color: "text.primary", bgcolor: "background.default", borderColor: "divider", borderRadius: 4, borderLeft: `3px solid ${vehicle.type === "electric" ? "#34d399" : "#58dced"}` }}>
                   <CardContent>
                     <Stack direction="row" sx={{ alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
                       <Box sx={{ minWidth: 0 }}>
                         <Stack direction="row" spacing={1.25} sx={{ alignItems: "center" }}>
                           <VehicleBrandLogo brand={vehicle.brand ?? vehicle.name} />
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{vehicle.name}</Typography>
-                            <Typography color="text.secondary">{vehicle.model}</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: 750, overflowWrap: "anywhere" }}>{formatVehicleLabel(vehicle.name, vehicle.model)}</Typography>
                           </Box>
                         </Stack>
                       </Box>
@@ -185,7 +196,7 @@ export function VehicleManagementPage() {
                     <Box sx={{ mt: 2 }}>
                       <VehicleImageDisplay
                         image={vehicle.image}
-                        vehicleLabel={`${vehicle.name} ${vehicle.model} ${vehicle.year}`}
+                        vehicleLabel={`${vehicle.brand ?? vehicle.name} ${vehicle.model} ${vehicle.year}`}
                         vehicleId={vehicle.id}
                       />
                     </Box>
@@ -201,6 +212,16 @@ export function VehicleManagementPage() {
                 </Card>
               ))}
             </Box>
+            {items.length > vehiclesPerPage && (
+              <Pagination
+                count={pageCount}
+                page={vehiclePage}
+                onChange={(_, nextPage) => setVehiclePage(nextPage)}
+                color="primary"
+                aria-label="Vehicle pages"
+                sx={{ display: "flex", justifyContent: "center", mt: 3 }}
+              />
+            )}
           </CardContent>
         </Card>
       </Box>

@@ -91,6 +91,8 @@ def update_owned_vehicle(
         "fuel_type": vehicle.fuel_type,
         **changes,
     }
+    if "name" not in changes and {"brand", "model"}.intersection(changes):
+        candidate["name"] = f"{candidate['brand']} {candidate['model']}".strip()
     try:
         validated = VehicleFields.model_validate(candidate)
     except ValidationError as exc:

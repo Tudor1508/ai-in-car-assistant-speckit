@@ -2,7 +2,6 @@ import type { VehicleInput } from "./vehiclesApi";
 import type { Vehicle } from "./vehiclesSlice";
 
 export type VehicleFormValues = {
-  name: string;
   model: string;
   brand: string;
   type: "combustion" | "electric";
@@ -16,7 +15,6 @@ export type VehicleFormErrors = Partial<Record<keyof VehicleFormValues, string>>
 
 export function valuesFromVehicle(vehicle?: Vehicle): VehicleFormValues {
   return {
-    name: vehicle?.name ?? "",
     model: vehicle?.model ?? "",
     brand: vehicle?.brand ?? vehicle?.name ?? "",
     type: vehicle?.type ?? "combustion",
@@ -40,12 +38,13 @@ export function validateVehicleForm(values: VehicleFormValues): {
   payload: VehicleInput | null;
 } {
   const errors: VehicleFormErrors = {};
-  const name = values.name.trim();
   const model = values.model.trim();
   const brand = values.brand.trim();
-  if (!name || name.length > 80) errors.name = "Enter a name between 1 and 80 characters.";
   if (!model || model.length > 80) errors.model = "Enter a model between 1 and 80 characters.";
   if (!brand || brand.length > 120) errors.brand = "Enter a brand between 1 and 120 characters.";
+  if (brand && model && `${brand} ${model}`.length > 80) {
+    errors.model = "Brand and model together must be 80 characters or fewer.";
+  }
   const year = /^\d{4}$/.test(values.year) ? Number(values.year) : NaN;
   if (!Number.isInteger(year) || year < 1886 || year > new Date().getFullYear()) {
     errors.year = `Enter a year between 1886 and ${new Date().getFullYear()}.`;
@@ -59,7 +58,6 @@ export function validateVehicleForm(values: VehicleFormValues): {
   return {
     errors,
     payload: {
-      name,
       model,
       brand,
       type: values.type,
